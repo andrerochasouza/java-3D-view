@@ -1,8 +1,16 @@
 package br.com.andre;
 
+import br.com.andre.engine.Game;
+
+import javax.swing.*;
+
 public class Main {
     public static void main(String[] args) {
-        Window w = new Window(400, 400);
-        w.setVisible(true);
+        JFrame frame = new JFrame("3D Game Demo");
+        Game game = new Game();
+        frame.add(game);
+        frame.pack();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
     }
 }
