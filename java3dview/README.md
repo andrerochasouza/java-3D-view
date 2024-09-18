@@ -6,11 +6,6 @@ uma interface gráfica em 3D utilizando Java 17, sem bibliotecas externas. A apl
 permite que o usuário navegue por cenários 3D com controle total do movimento da câmera
 e teclado.
 
-## Demonstração
-
-Insira um gif ou um link de alguma demonstração
-
-
 ## Stack utilizada
 
 **Back-end:** Java 17
@@ -27,6 +22,6 @@ Insira um gif ou um link de alguma demonstração
 
 ```bash
   mvn clean package
-  jpackage --input .\target\input --dest .\target\output --name Java3DView --main-jar Java3DView.jar --main-class br.com.andre.Main
+  jpackage --type msi --input .\target\input --dest .\target\output --name Java3DView --main-jar Java3DView.jar --main-class br.com.andre.Main --win-dir-chooser --win-shortcut
 ```
     

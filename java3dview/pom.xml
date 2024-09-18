@@ -17,7 +17,6 @@
 
     <build>
         <finalName>Java3DView</finalName>
-        <directory>${project.basedir}/input</directory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -39,6 +38,7 @@
                             <mainClass>br.com.andre.Main</mainClass>
                         </manifest>
                     </archive>
+                    <outputDirectory>${project.build.directory}/input</outputDirectory>
                 </configuration>
             </plugin>
         </plugins>
