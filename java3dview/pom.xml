@@ -16,7 +16,8 @@
     </properties>
 
     <build>
-        <finalName>AppJar</finalName>
+        <finalName>Java3DView</finalName>
+        <directory>${project.basedir}/input</directory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
