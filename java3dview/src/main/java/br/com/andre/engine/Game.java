@@ -1,6 +1,8 @@
 package br.com.andre.engine;
 
+import br.com.andre.graphic.Renderer;
 import br.com.andre.graphic.Vector3;
+import br.com.andre.graphic.World;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,7 +10,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 
 public class Game extends JPanel implements KeyListener, MouseMotionListener {
-    private Renderer renderer;
+    private br.com.andre.graphic.Renderer renderer;
     private Camera camera;
     private World world;
     private long lastTime;

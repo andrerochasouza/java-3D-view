@@ -1,7 +1,4 @@
-package br.com.andre.engine;
-
-import br.com.andre.graphic.Polygon;
-import br.com.andre.graphic.Vector3;
+package br.com.andre.graphic;
 
 import java.awt.*;
 import java.io.BufferedReader;

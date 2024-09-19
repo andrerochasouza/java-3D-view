@@ -32,11 +32,11 @@ public class Camera {
     }
 
     public void moveLeft() {
-        position = position.add(right.multiply(speed));
+        position = position.subtract(right.multiply(speed));
     }
 
     public void moveRight() {
-        position = position.subtract(right.multiply(speed));
+        position = position.add(right.multiply(speed));
     }
 
     public void rotate(double deltaX, double deltaY) {
@@ -59,7 +59,7 @@ public class Camera {
         ).normalize();
 
         // Recalcula o vetor right
-        right = direction.cross(new Vector3(0, 1, 0)).normalize();
+        right = new Vector3(0, 1, 0).cross(direction).normalize();
 
         // Recalcula o vetor up
         up = right.cross(direction).normalize();
