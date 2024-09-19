@@ -1,11 +1,14 @@
 package br.com.andre.graphic;
 
+import br.com.andre.bsp.BSPNode;
 import br.com.andre.engine.Camera;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+
+import static br.com.andre.util.CalcPolygon.calculatePolygonCenter;
+import static br.com.andre.util.CalcPolygon.calculatePolygonNormal;
 
 /**
  * A classe Renderer lida com a renderização do mundo 3D na tela 2D.
@@ -28,28 +31,64 @@ public class Renderer {
     }
 
     /**
+     * Define o tamanho da tela para renderização.
+     *
+     * @param width  a largura da tela
+     * @param height a altura da tela
+     */
+    public void setScreenSize(int width, int height) {
+        this.screenWidth = width;
+        this.screenHeight = height;
+    }
+
+    /**
      * Renderiza o mundo no contexto Graphics fornecido.
      *
      * @param g o contexto Graphics no qual desenhar
      */
     public void render(Graphics g) {
-        // Define o fundo da tela como preto e preenche todo o espaço disponível
+        // Limpa a tela com a cor preta
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, screenWidth, screenHeight);
 
-        // Lista para armazenar os polígonos que serão renderizados após transformação e projeção
-        List<RenderedPolygon> renderedPolygons = new ArrayList<>();
+        // Renderiza a cena usando a BSP Tree
+        renderBSPNode(g, world.getBSPTree(), camera.getPosition());
+    }
 
-        // Itera sobre cada polígono presente no mundo
-        for (Polygon polygon : world.getPolygons()) {
-            // Calcula o vetor normal do polígono
+    private void renderBSPNode(Graphics g, BSPNode node, Vector3 cameraPosition) {
+        if (node == null) {
+            return;
+        }
+
+        Polygon partitionPolygon = node.getPartitionPolygon();
+        if (partitionPolygon == null) {
+            return;
+        }
+
+        Vector3 normal = calculatePolygonNormal(partitionPolygon);
+        Vector3 partitionCenter = calculatePolygonCenter(partitionPolygon);
+        Vector3 toCamera = cameraPosition.subtract(partitionCenter);
+
+        boolean inFront = normal.dot(toCamera) >= 0;
+
+        if (inFront) {
+            renderBSPNode(g, node.getBackNode(), cameraPosition);
+            renderPolygons(g, node.getPolygons());
+            renderBSPNode(g, node.getFrontNode(), cameraPosition);
+        } else {
+            renderBSPNode(g, node.getFrontNode(), cameraPosition);
+            renderPolygons(g, node.getPolygons());
+            renderBSPNode(g, node.getBackNode(), cameraPosition);
+        }
+    }
+
+    private void renderPolygons(Graphics g, List<Polygon> polygonsToRender) {
+        for (Polygon polygon : polygonsToRender) {
+            // Aplica o back-face culling se estiver habilitado para este polígono
             Vector3 normal = calculatePolygonNormal(polygon);
-            // Calcula o centro do polígono
             Vector3 polygonCenter = calculatePolygonCenter(polygon);
-            // Calcula o vetor de visão (do centro do polígono para a câmera)
             Vector3 viewVector = polygonCenter.subtract(camera.getPosition()).normalize();
 
-            // Aplica o back-face culling se estiver habilitado para este polígono
             if (polygon.isCullBackFace()) {
                 if (normal.dot(viewVector) < 0) {
                     continue; // Ignora o polígono se estiver de costas para a câmera
@@ -70,48 +109,29 @@ public class Renderer {
             if (transformedVertices.size() >= 3) {
                 // Projeta os vértices no plano 2D da tela
                 List<Vector3> projectedVertices = new ArrayList<>();
-                double averageDepth = 0;
 
                 for (Vector3 vertex : transformedVertices) {
                     Vector3 projected = projectVertex(vertex);
                     projectedVertices.add(projected);
-                    averageDepth += vertex.getZ(); // Acumula a profundidade Z para ordenação posterior
                 }
 
-                // Calcula a profundidade média do polígono
-                averageDepth /= transformedVertices.size();
+                // Desenha o polígono
+                int[] xPoints = new int[projectedVertices.size()];
+                int[] yPoints = new int[projectedVertices.size()];
 
-                // Cria um novo objeto RenderedPolygon com os vértices projetados, cor e profundidade média
-                RenderedPolygon renderedPolygon = new RenderedPolygon(projectedVertices, polygon.getColor(), averageDepth);
-                renderedPolygons.add(renderedPolygon);
+                for (int i = 0; i < projectedVertices.size(); i++) {
+                    Vector3 v = projectedVertices.get(i);
+                    xPoints[i] = (int) v.getX();
+                    yPoints[i] = (int) v.getY();
+                }
+
+                g.setColor(polygon.getColor());
+                g.fillPolygon(xPoints, yPoints, projectedVertices.size());
+
+                // Desenha o contorno do polígono com a cor preta
+                g.setColor(Color.BLACK);
+                g.drawPolygon(xPoints, yPoints, projectedVertices.size());
             }
-        }
-
-        // Ordena os polígonos por profundidade média (Z-buffer), do mais distante para o mais próximo
-        renderedPolygons.sort(Comparator.comparingDouble(RenderedPolygon::getDepth).reversed());
-
-        // Itera sobre cada polígono renderizado para desenhá-los na tela
-        for (RenderedPolygon rp : renderedPolygons) {
-            List<Vector3> projectedVertices = rp.getVertices();
-
-            // Arrays para armazenar as coordenadas X e Y dos vértices projetados
-            int[] xPoints = new int[projectedVertices.size()];
-            int[] yPoints = new int[projectedVertices.size()];
-
-            // Extrai as coordenadas X e Y de cada vértice projetado
-            for (int i = 0; i < projectedVertices.size(); i++) {
-                Vector3 v = projectedVertices.get(i);
-                xPoints[i] = (int) v.getX();
-                yPoints[i] = (int) v.getY();
-            }
-
-            // Define a cor do polígono e o preenche na tela
-            g.setColor(rp.getColor());
-            g.fillPolygon(xPoints, yPoints, projectedVertices.size());
-
-            // Desenha o contorno do polígono com a cor preta
-            g.setColor(Color.BLACK);
-            g.drawPolygon(xPoints, yPoints, projectedVertices.size());
         }
     }
 
@@ -209,55 +229,5 @@ public class Renderer {
         double y = S.getY() + t * (E.getY() - S.getY());
 
         return new Vector3(x, y, nearPlaneZ);
-    }
-
-    /**
-     * Calcula o vetor normal de um polígono.
-     *
-     * @param polygon o polígono para o qual calcular a normal
-     * @return o vetor normal normalizado do polígono
-     */
-    private Vector3 calculatePolygonNormal(Polygon polygon) {
-        List<Vector3> vertices = polygon.getVertices();
-
-        Vector3 v0 = vertices.get(0);
-        Vector3 v1 = vertices.get(1);
-        Vector3 v2 = vertices.get(2);
-
-        Vector3 edge1 = v1.subtract(v0);
-        Vector3 edge2 = v2.subtract(v0);
-
-        return edge1.cross(edge2).normalize();
-    }
-
-    /**
-     * Calcula o centro de um polígono.
-     *
-     * @param polygon o polígono para o qual calcular o centro
-     * @return o vetor representando o centro do polígono
-     */
-    private Vector3 calculatePolygonCenter(Polygon polygon) {
-        List<Vector3> vertices = polygon.getVertices();
-        double x = 0, y = 0, z = 0;
-        int numVertices = vertices.size();
-
-        for (Vector3 vertex : vertices) {
-            x += vertex.getX();
-            y += vertex.getY();
-            z += vertex.getZ();
-        }
-
-        return new Vector3(x / numVertices, y / numVertices, z / numVertices);
-    }
-
-    /**
-     * Define o tamanho da tela para renderização.
-     *
-     * @param width  a largura da tela
-     * @param height a altura da tela
-     */
-    public void setScreenSize(int width, int height) {
-        this.screenWidth = width;
-        this.screenHeight = height;
     }
 }

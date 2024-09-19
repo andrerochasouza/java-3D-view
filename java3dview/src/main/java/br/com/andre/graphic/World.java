@@ -1,10 +1,14 @@
 package br.com.andre.graphic;
 
+import br.com.andre.bsp.BSPNode;
+
 import java.awt.*;
 import java.io.*;
-import java.net.URL;
 import java.util.*;
 import java.util.List;
+
+import static br.com.andre.util.CalcPolygon.calculatePolygonCenter;
+import static br.com.andre.util.CalcPolygon.calculatePolygonNormal;
 
 /**
  * A classe World representa o ambiente 3D contendo todos os polígonos a serem renderizados.
@@ -12,15 +16,63 @@ import java.util.List;
 public class World {
     private List<Polygon> polygons;
     private Map<String, Material> materials;
+    private BSPNode bspTree;
 
-    public World(String path) {
+    /**
+     * Construtor que cria um novo mundo, carregando polígonos de um arquivo ou inicializando polígonos padrão.
+     *
+     * @param path o caminho para o arquivo OBJ a ser carregado
+     */
+    public World(String path) throws IllegalArgumentException {
         polygons = new ArrayList<>();
         materials = new HashMap<>();
-        if (Objects.nonNull(path) && !path.isEmpty()) {
-            loadFromOBJ(path);
-        } else {
-            initializePolygonsTest();
+
+        if (path == null || path.isEmpty()) {
+            throw new IllegalArgumentException("O caminho do recurso não pode ser nulo ou vazio.");
         }
+
+        loadFromOBJ(path); // Carrega o arquivo OBJ
+        buildBSPTree(); // Constrói a BSP Tree após carregar os polígonos
+    }
+
+    /**
+     * Obtém a raiz da BSP Tree construída.
+     *
+     * @return o nó raiz da BSP Tree
+     */
+    public BSPNode getBSPTree() {
+        return bspTree;
+    }
+
+    /**
+     * Constrói a BSP Tree a partir dos polígonos carregados.
+     */
+    public void buildBSPTree() {
+        bspTree = buildBSPNode(polygons);
+    }
+
+    private BSPNode buildBSPNode(List<Polygon> polygonList) {
+        if (polygonList.isEmpty()) {
+            return null;
+        }
+
+        // Escolhe um polígono como partição (aqui escolhemos o primeiro)
+        Polygon partitionPolygon = polygonList.get(0);
+
+        List<Polygon> frontList = new ArrayList<>();
+        List<Polygon> backList = new ArrayList<>();
+
+        for (int i = 1; i < polygonList.size(); i++) {
+            Polygon poly = polygonList.get(i);
+            // Classifica o polígono em frente, atrás ou dividindo o plano
+            classifyPolygon(partitionPolygon, poly, frontList, backList);
+        }
+
+        BSPNode node = new BSPNode(Collections.singletonList(partitionPolygon));
+        node.setFrontNode(buildBSPNode(frontList));
+        node.setBackNode(buildBSPNode(backList));
+
+        return node;
     }
 
     /**
@@ -143,40 +195,18 @@ public class World {
         }
     }
 
-    /**
-     * Inicializa polígonos padrão para testes (um cubo).
-     */
-    private void initializePolygonsTest() {
-        // Cria um cubo simples
-        Vector3 v1 = new Vector3(-1, -1, -1);
-        Vector3 v2 = new Vector3(1, -1, -1);
-        Vector3 v3 = new Vector3(1, 1, -1);
-        Vector3 v4 = new Vector3(-1, 1, -1);
-        Vector3 v5 = new Vector3(-1, -1, 1);
-        Vector3 v6 = new Vector3(1, -1, 1);
-        Vector3 v7 = new Vector3(1, 1, 1);
-        Vector3 v8 = new Vector3(-1, 1, 1);
+    private void classifyPolygon(Polygon partitionPolygon, Polygon poly, List<Polygon> frontList, List<Polygon> backList) {
+        // Implementa a lógica para classificar o polígono em frente, atrás ou dividindo o plano
+        Vector3 normal = calculatePolygonNormal(partitionPolygon);
+        Vector3 center = calculatePolygonCenter(poly);
 
-        // Frente
-        polygons.add(new Polygon(Color.BLUE, true, v1, v2, v3, v4));
-        // Trás
-        polygons.add(new Polygon(Color.RED, true, v5, v6, v7, v8));
-        // Esquerda
-        polygons.add(new Polygon(Color.GREEN, true, v1, v4, v8, v5));
-        // Direita
-        polygons.add(new Polygon(Color.GRAY, true, v2, v6, v7, v3));
-        // Topo (definir cullBackFace como false para renderizar ambos os lados)
-        polygons.add(new Polygon(Color.WHITE, false, v4, v3, v7, v8));
-        // Base (definir cullBackFace como false)
-        polygons.add(new Polygon(Color.PINK, false, v1, v5, v6, v2));
-    }
+        Vector3 partitionCenter = calculatePolygonCenter(partitionPolygon);
+        Vector3 toPoly = center.subtract(partitionCenter);
 
-    /**
-     * Obtém a lista de polígonos no mundo.
-     *
-     * @return a lista de polígonos
-     */
-    public List<Polygon> getPolygons() {
-        return polygons;
+        if (normal.dot(toPoly) >= 0) {
+            frontList.add(poly);
+        } else {
+            backList.add(poly);
+        }
     }
 }

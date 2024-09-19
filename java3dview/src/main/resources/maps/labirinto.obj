@@ -13,8 +13,8 @@ v 0 0 20     # Vértice 4
 # Exemplo de parede vertical (no eixo Z), começando em (2,0,2)
 v 2 0 2      # Vértice 5
 v 2 0 4      # Vértice 6
-v 2 2 2      # Vértice 7
-v 2 2 4      # Vértice 8
+v 2 -2 2      # Vértice 7
+v 2 -2 4      # Vértice 8
 
 # Adicione mais paredes conforme necessário para formar o labirinto
 # Aqui estão alguns exemplos adicionais:
@@ -22,8 +22,8 @@ v 2 2 4      # Vértice 8
 # Parede horizontal
 v 4 0 6      # Vértice 9
 v 6 0 6      # Vértice 10
-v 4 2 6      # Vértice 11
-v 6 2 6      # Vértice 12
+v 4 -2 6      # Vértice 11
+v 6 -2 6      # Vértice 12
 
 # Parede vertical
 v 8 0 8      # Vértice 13
