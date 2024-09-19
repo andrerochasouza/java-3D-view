@@ -1,14 +1,13 @@
 package br.com.andre.engine;
 
-import br.com.andre.graphic.Renderer;
 import br.com.andre.graphic.Vector3;
-import br.com.andre.graphic.World;
+import br.com.andre.object.CollisionObject;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.util.Objects;
+import java.util.List;
 
 /**
  * A classe Game representa o painel principal do jogo, lidando com renderização e entrada do usuário.
@@ -33,7 +32,7 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
         this.setBackground(Color.BLACK);
 
         // Inicializa o mundo e o renderizador
-        world = new World("maps/map.obj");
+        world = new World("maps/collision.obj");
         camera = new Camera();
         renderer = new Renderer(world, camera);
         renderer.setScreenSize(800, 600);
@@ -76,10 +75,13 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
      * Atualiza o estado do jogo, incluindo movimentação da câmera e cálculo de FPS.
      */
     private void update() {
-        if (moveForward) camera.moveForward();
-        if (moveBackward) camera.moveBackward();
-        if (moveLeft) camera.moveLeft();
-        if (moveRight) camera.moveRight();
+        // Obtém a lista de paredes do mundo
+        List<CollisionObject> collisionObjects = world.getCollisionObjects(); // Obtém a lista de objetos de colisão
+
+        if (moveForward) camera.moveForward(collisionObjects);
+        if (moveBackward) camera.moveBackward(collisionObjects);
+        if (moveLeft) camera.moveLeft(collisionObjects);
+        if (moveRight) camera.moveRight(collisionObjects);
 
         long currentTime = System.currentTimeMillis();
         frameCount++;

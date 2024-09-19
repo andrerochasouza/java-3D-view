@@ -1,6 +1,6 @@
 package br.com.andre.util;
 
-import br.com.andre.graphic.Polygon;
+import br.com.andre.graphic.PolygonGraphic;
 import br.com.andre.graphic.Vector3;
 
 import java.util.List;
@@ -10,11 +10,11 @@ public class CalcPolygon {
     /**
      * Calcula o vetor normal de um polígono.
      *
-     * @param polygon o polígono para o qual calcular a normal
+     * @param polygonGraphic o polígono para o qual calcular a normal
      * @return o vetor normal normalizado do polígono
      */
-    public static Vector3 calculatePolygonNormal(Polygon polygon) {
-        List<Vector3> vertices = polygon.getVertices();
+    public static Vector3 calculatePolygonNormal(PolygonGraphic polygonGraphic) {
+        List<Vector3> vertices = polygonGraphic.getVertices();
 
         Vector3 v0 = vertices.get(0);
         Vector3 v1 = vertices.get(1);
@@ -29,11 +29,11 @@ public class CalcPolygon {
     /**
      * Calcula o centro de um polígono.
      *
-     * @param polygon o polígono para o qual calcular o centro
+     * @param polygonGraphic o polígono para o qual calcular o centro
      * @return o vetor representando o centro do polígono
      */
-    public static Vector3 calculatePolygonCenter(Polygon polygon) {
-        List<Vector3> vertices = polygon.getVertices();
+    public static Vector3 calculatePolygonCenter(PolygonGraphic polygonGraphic) {
+        List<Vector3> vertices = polygonGraphic.getVertices();
         double x = 0, y = 0, z = 0;
         int numVertices = vertices.size();
 

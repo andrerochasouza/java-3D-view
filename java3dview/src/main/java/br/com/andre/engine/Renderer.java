@@ -1,7 +1,7 @@
-package br.com.andre.graphic;
+package br.com.andre.engine;
 
-import br.com.andre.bsp.BSPNode;
-import br.com.andre.engine.Camera;
+import br.com.andre.graphic.PolygonGraphic;
+import br.com.andre.graphic.Vector3;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -60,13 +60,13 @@ public class Renderer {
             return;
         }
 
-        Polygon partitionPolygon = node.getPartitionPolygon();
-        if (partitionPolygon == null) {
+        PolygonGraphic partitionPolygonGraphic = node.getPartitionPolygon();
+        if (partitionPolygonGraphic == null) {
             return;
         }
 
-        Vector3 normal = calculatePolygonNormal(partitionPolygon);
-        Vector3 partitionCenter = calculatePolygonCenter(partitionPolygon);
+        Vector3 normal = calculatePolygonNormal(partitionPolygonGraphic);
+        Vector3 partitionCenter = calculatePolygonCenter(partitionPolygonGraphic);
         Vector3 toCamera = cameraPosition.subtract(partitionCenter);
 
         boolean inFront = normal.dot(toCamera) >= 0;
@@ -82,14 +82,14 @@ public class Renderer {
         }
     }
 
-    private void renderPolygons(Graphics g, List<Polygon> polygonsToRender) {
-        for (Polygon polygon : polygonsToRender) {
+    private void renderPolygons(Graphics g, List<PolygonGraphic> polygonsToRender) {
+        for (PolygonGraphic polygonGraphic : polygonsToRender) {
             // Aplica o back-face culling se estiver habilitado para este polígono
-            Vector3 normal = calculatePolygonNormal(polygon);
-            Vector3 polygonCenter = calculatePolygonCenter(polygon);
+            Vector3 normal = calculatePolygonNormal(polygonGraphic);
+            Vector3 polygonCenter = calculatePolygonCenter(polygonGraphic);
             Vector3 viewVector = polygonCenter.subtract(camera.getPosition()).normalize();
 
-            if (polygon.isCullBackFace()) {
+            if (polygonGraphic.isCullBackFace()) {
                 if (normal.dot(viewVector) < 0) {
                     continue; // Ignora o polígono se estiver de costas para a câmera
                 }
@@ -97,7 +97,7 @@ public class Renderer {
 
             // Transforma os vértices para o espaço da câmera
             List<Vector3> transformedVertices = new ArrayList<>();
-            for (Vector3 vertex : polygon.getVertices()) {
+            for (Vector3 vertex : polygonGraphic.getVertices()) {
                 Vector3 transformed = transformVertex(vertex);
                 transformedVertices.add(transformed);
             }
@@ -125,7 +125,7 @@ public class Renderer {
                     yPoints[i] = (int) v.getY();
                 }
 
-                g.setColor(polygon.getColor());
+                g.setColor(polygonGraphic.getColor());
                 g.fillPolygon(xPoints, yPoints, projectedVertices.size());
 
                 // Desenha o contorno do polígono com a cor preta

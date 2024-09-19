@@ -1,6 +1,11 @@
 package br.com.andre.engine;
 
 import br.com.andre.graphic.Vector3;
+import br.com.andre.object.CollisionDetector;
+import br.com.andre.object.CollisionObject;
+import br.com.andre.object.CollisionResult;
+
+import java.util.List;
 
 /**
  * Representa uma câmera no espaço 3D, lidando com posição e orientação.
@@ -14,12 +19,13 @@ public class Camera {
     private double pitch;
     private double speed;
     private double sensitivity;
+    private double radius;
 
     /**
      * Inicializa a câmera na origem, olhando para o eixo -Z.
      */
     public Camera() {
-        position = new Vector3(0, 0, 0);
+        position = new Vector3(0, 1.8, 5); // Ajuste a posição inicial se necessário
         direction = new Vector3(0, 0, -1);
         up = new Vector3(0, 1, 0);
         right = new Vector3(1, 0, 0);
@@ -27,34 +33,63 @@ public class Camera {
         pitch = 0;
         speed = 0.1;
         sensitivity = 0.1;
+        radius = 0.5; // Define o raio da esfera da câmera
     }
 
     /**
      * Move a câmera para frente na direção em que está olhando.
      */
-    public void moveForward() {
-        position = position.add(direction.multiply(speed));
+    public void moveForward(List<CollisionObject> collisionObjects) {
+        Vector3 movement = direction.multiply(speed);
+        Vector3 newPosition = position.add(movement);
+        CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
+        if (!collisionResult.collision) {
+            position = newPosition;
+        } else {
+            adjustMovementWithSliding(movement, collisionResult.collisionNormal, collisionObjects);
+        }
     }
 
     /**
      * Move a câmera para trás, oposto à direção em que está olhando.
      */
-    public void moveBackward() {
-        position = position.subtract(direction.multiply(speed));
+    public void moveBackward(List<CollisionObject> collisionObjects) {
+        Vector3 movement = direction.multiply(speed);
+        Vector3 newPosition = position.subtract(movement);
+        CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
+        if (!collisionResult.collision) {
+            position = newPosition;
+        } else {
+            adjustMovementWithSliding(movement, collisionResult.collisionNormal, collisionObjects);
+        }
     }
 
     /**
      * Move a câmera para a esquerda relativa à sua direção atual.
      */
-    public void moveLeft() {
-        position = position.subtract(right.multiply(speed));
+    public void moveLeft(List<CollisionObject> collisionObjects) {
+        Vector3 movement = right.multiply(speed);
+        Vector3 newPosition = position.subtract(movement);
+        CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
+        if (!collisionResult.collision) {
+            position = newPosition;
+        } else {
+            adjustMovementWithSliding(movement, collisionResult.collisionNormal, collisionObjects);
+        }
     }
 
     /**
      * Move a câmera para a direita relativa à sua direção atual.
      */
-    public void moveRight() {
-        position = position.add(right.multiply(speed));
+    public void moveRight(List<CollisionObject> collisionObjects) {
+        Vector3 movement = right.multiply(speed);
+        Vector3 newPosition = position.add(movement);
+        CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
+        if (!collisionResult.collision) {
+            position = newPosition;
+        } else {
+            adjustMovementWithSliding(movement, collisionResult.collisionNormal, collisionObjects);
+        }
     }
 
     /**
@@ -126,5 +161,30 @@ public class Camera {
      */
     public Vector3 getRight() {
         return right;
+    }
+
+    private CollisionResult checkCollision(Vector3 newPosition, List<CollisionObject> collisionObjects) {
+        for (CollisionObject obj : collisionObjects) {
+            CollisionObject.AABB boundingBox = obj.getBoundingBox();
+            CollisionResult result = CollisionDetector.sphereIntersectsAABB(newPosition, radius, boundingBox.getMin(), boundingBox.getMax());
+            if (result.collision) {
+                return result;
+            }
+        }
+        return new CollisionResult(false, null);
+    }
+
+    private void adjustMovementWithSliding(Vector3 movement, Vector3 collisionNormal, List<CollisionObject> collisionObjects) {
+        // Remove o componente do movimento na direção da normal da colisão
+        Vector3 movementParallel = movement.subtract(collisionNormal.multiply(movement.dot(collisionNormal)));
+
+        // Tenta mover na direção ajustada
+        Vector3 newPosition = position.add(movementParallel);
+        CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
+        if (!collisionResult.collision) {
+            position = newPosition;
+        } else {
+            // Se ainda colidir, não move
+        }
     }
 }

@@ -23,22 +23,30 @@ public class Vector3 {
         return z;
     }
 
-    // Soma de vetores
+    public Vector3 setX(double x) {
+        return new Vector3(x, this.y, this.z);
+    }
+
+    public Vector3 setY(double y) {
+        return new Vector3(this.x, y, this.z);
+    }
+
+    public Vector3 setZ(double z) {
+        return new Vector3(this.x, this.y, z);
+    }
+
     public Vector3 add(Vector3 other) {
         return new Vector3(this.x + other.x, this.y + other.y, this.z + other.z);
     }
 
-    // Subtração de vetores
     public Vector3 subtract(Vector3 other) {
         return new Vector3(this.x - other.x, this.y - other.y, this.z - other.z);
     }
 
-    // Multiplicação por um escalar
     public Vector3 multiply(double scalar) {
         return new Vector3(this.x * scalar, this.y * scalar, this.z * scalar);
     }
 
-    // Produto vetorial
     public Vector3 cross(Vector3 other) {
         double newX = this.y * other.z - this.z * other.y;
         double newY = this.z * other.x - this.x * other.z;
@@ -46,12 +54,10 @@ public class Vector3 {
         return new Vector3(newX, newY, newZ);
     }
 
-    // Produto escalar
     public double dot(Vector3 other) {
         return this.x * other.x + this.y * other.y + this.z * other.z;
     }
 
-    // Normalização do vetor
     public Vector3 normalize() {
         double length = Math.sqrt(x * x + y * y + z * z);
         if (length == 0) {
@@ -60,12 +66,19 @@ public class Vector3 {
         return new Vector3(x / length, y / length, z / length);
     }
 
-    // Verifica se o vetor é igual a outro
     public boolean equals(Vector3 other) {
         return this.x == other.x && this.y == other.y && this.z == other.z;
     }
 
-    // Representação em string para depuração
+    /**
+     * Retorna um novo vetor que é a negação deste vetor.
+     *
+     * @return um novo vetor com todos os componentes multiplicados por -1
+     */
+    public Vector3 negate() {
+        return new Vector3(-this.x, -this.y, -this.z);
+    }
+
     @Override
     public String toString() {
         return "Vector3{" +
