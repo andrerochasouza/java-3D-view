@@ -1,0 +1,9 @@
+# Materiais para o labirinto
+
+newmtl FloorMaterial
+Kd 0.7 0.7 0.7  # Cor cinza claro para o piso
+cullBackFace false
+
+newmtl WallMaterial
+Kd 0.2 0.2 0.8  # Cor azul para as paredes
+cullBackFace false

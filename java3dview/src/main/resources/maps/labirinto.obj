@@ -1,0 +1,52 @@
+# Arquivo OBJ para um labirinto simples
+
+mtllib maps/labirinto.mtl
+
+# Vértices (v)
+# Piso (um quadrado de 20x20 unidades)
+v 0 0 0      # Vértice 1
+v 20 0 0     # Vértice 2
+v 20 0 20    # Vértice 3
+v 0 0 20     # Vértice 4
+
+# Paredes (cada parede é um cubo de 2 unidades de altura)
+# Exemplo de parede vertical (no eixo Z), começando em (2,0,2)
+v 2 0 2      # Vértice 5
+v 2 0 4      # Vértice 6
+v 2 2 2      # Vértice 7
+v 2 2 4      # Vértice 8
+
+# Adicione mais paredes conforme necessário para formar o labirinto
+# Aqui estão alguns exemplos adicionais:
+
+# Parede horizontal
+v 4 0 6      # Vértice 9
+v 6 0 6      # Vértice 10
+v 4 2 6      # Vértice 11
+v 6 2 6      # Vértice 12
+
+# Parede vertical
+v 8 0 8      # Vértice 13
+v 8 0 10     # Vértice 14
+v 8 2 8      # Vértice 15
+v 8 2 10     # Vértice 16
+
+# Continue adicionando paredes para formar o labirinto
+
+# Faces (f)
+# Piso
+usemtl FloorMaterial
+f 1 2 3 4
+
+# Paredes
+usemtl WallMaterial
+# Parede vertical (Vértices 5-8)
+f 5 6 8 7
+
+# Parede horizontal (Vértices 9-12)
+f 9 10 12 11
+
+# Parede vertical (Vértices 13-16)
+f 13 14 16 15
+
+# Continue adicionando faces correspondentes às paredes adicionadas

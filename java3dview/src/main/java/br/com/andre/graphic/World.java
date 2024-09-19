@@ -1,10 +1,9 @@
 package br.com.andre.graphic;
 
 import java.awt.*;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
+import java.io.*;
+import java.net.URL;
+import java.util.*;
 import java.util.List;
 
 /**
@@ -12,16 +11,13 @@ import java.util.List;
  */
 public class World {
     private List<Polygon> polygons;
+    private Map<String, Material> materials;
 
-    /**
-     * Construtor que cria um novo mundo, carregando polígonos de um arquivo ou inicializando polígonos padrão.
-     *
-     * @param filepath o caminho para o arquivo OBJ a ser carregado, ou null para polígonos padrão
-     */
-    public World(String filepath) {
+    public World(String path) {
         polygons = new ArrayList<>();
-        if (filepath != null && !filepath.isEmpty()) {
-            loadFromOBJ(filepath);
+        materials = new HashMap<>();
+        if (Objects.nonNull(path) && !path.isEmpty()) {
+            loadFromOBJ(path);
         } else {
             initializePolygonsTest();
         }
@@ -30,16 +26,37 @@ public class World {
     /**
      * Carrega polígonos de um arquivo OBJ.
      *
-     * @param filename o caminho para o arquivo OBJ
+     * @param path o caminho para a pasta resource
      */
-    private void loadFromOBJ(String filename) {
-        List<Vector3> vertices = new ArrayList<>();
-        List<List<Integer>> faces = new ArrayList<>();
+    private void loadFromOBJ(String path) {
+        InputStream objStream = getClass().getClassLoader().getResourceAsStream(path);
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+        if (objStream == null) {
+            System.err.println("Arquivo não encontrado: " + path);
+            return;
+        }
+
+        List<Vector3> vertices = new ArrayList<>();
+        String currentMaterialName = null;
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(objStream))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.startsWith("v ")) {
+                line = line.trim();
+                // Remove comentários inline
+                if (line.contains("#")) {
+                    line = line.split("#")[0].trim();
+                }
+                if (line.isEmpty()) {
+                    continue; // Ignora linhas vazias após remover comentários
+                }
+
+                if (line.startsWith("mtllib ")) {
+                    String mtlFileName = line.substring(7).trim();
+                    loadMaterials(mtlFileName);
+                } else if (line.startsWith("usemtl ")) {
+                    currentMaterialName = line.substring(7).trim();
+                } else if (line.startsWith("v ")) {
                     String[] parts = line.split("\\s+");
                     double x = Double.parseDouble(parts[1]);
                     double y = Double.parseDouble(parts[2]);
@@ -47,24 +64,82 @@ public class World {
                     vertices.add(new Vector3(x, y, z));
                 } else if (line.startsWith("f ")) {
                     String[] parts = line.split("\\s+");
-                    List<Integer> face = new ArrayList<>();
+                    List<Integer> faceIndices = new ArrayList<>();
                     for (int i = 1; i < parts.length; i++) {
-                        face.add(Integer.parseInt(parts[i].split("/")[0]) - 1);
+                        String[] vertexData = parts[i].split("/");
+                        int vertexIndex = Integer.parseInt(vertexData[0]) - 1;
+                        faceIndices.add(vertexIndex);
                     }
-                    faces.add(face);
+                    Vector3[] faceVertices = new Vector3[faceIndices.size()];
+                    for (int i = 0; i < faceIndices.size(); i++) {
+                        faceVertices[i] = vertices.get(faceIndices.get(i));
+                    }
+                    // Obtém a cor e a flag de culling do material atual
+                    Color color = Color.LIGHT_GRAY;
+                    boolean cullBackFace = true; // Valor padrão
+
+                    if (currentMaterialName != null && materials.containsKey(currentMaterialName)) {
+                        Material material = materials.get(currentMaterialName);
+                        color = material.getDiffuseColor();
+                        cullBackFace = material.isCullBackFace(); // Supondo que você adicionou este atributo na classe Material
+                    }
+
+                    polygons.add(new Polygon(color, cullBackFace, faceVertices));
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
-        for (List<Integer> face : faces) {
-            Vector3[] faceVertices = new Vector3[face.size()];
-            for (int i = 0; i < face.size(); i++) {
-                faceVertices[i] = vertices.get(face.get(i));
+    private void loadMaterials(String mtlFileName) {
+        InputStream mtlStream = getClass().getClassLoader().getResourceAsStream(mtlFileName);
+
+        if (mtlStream == null) {
+            System.err.println("Arquivo MTL não encontrado: " + mtlFileName);
+            return;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(mtlStream))) {
+            String line;
+            Material currentMaterial = null;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                // Remove comentários inline
+                if (line.contains("#")) {
+                    line = line.split("#")[0].trim();
+                }
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                if (line.startsWith("newmtl ")) {
+                    String materialName = line.substring(7).trim();
+                    currentMaterial = new Material(materialName, Color.LIGHT_GRAY, false);
+                    materials.put(materialName, currentMaterial);
+                } else if (line.startsWith("Kd ")) {
+                    if (currentMaterial != null) {
+                        String[] parts = line.split("\\s+");
+                        float r = Float.parseFloat(parts[1]);
+                        float g = Float.parseFloat(parts[2]);
+                        float b = Float.parseFloat(parts[3]);
+                        Color diffuseColor = new Color(r, g, b);
+                        // Atualiza a cor difusa do material atual
+                        currentMaterial = new Material(currentMaterial.getName(), diffuseColor, false);
+                        materials.put(currentMaterial.getName(), currentMaterial);
+                    }
+                }
+
+                if (line.startsWith("cullBackFace ")) {
+                    if (currentMaterial != null) {
+                        String value = line.substring(13).trim();
+                        boolean cullBackFace = Boolean.parseBoolean(value);
+                        currentMaterial.setCullBackFace(cullBackFace);
+                    }
+                }
             }
-            polygons.add(new Polygon(
-                    new Color((float) Math.random(), (float) Math.random(), (float) Math.random()), faceVertices));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -83,17 +158,17 @@ public class World {
         Vector3 v8 = new Vector3(-1, 1, 1);
 
         // Frente
-        polygons.add(new Polygon(Color.BLUE, v1, v2, v3, v4));
+        polygons.add(new Polygon(Color.BLUE, true, v1, v2, v3, v4));
         // Trás
-        polygons.add(new Polygon(Color.RED, v5, v6, v7, v8));
+        polygons.add(new Polygon(Color.RED, true, v5, v6, v7, v8));
         // Esquerda
-        polygons.add(new Polygon(Color.GREEN, v1, v4, v8, v5));
+        polygons.add(new Polygon(Color.GREEN, true, v1, v4, v8, v5));
         // Direita
-        polygons.add(new Polygon(Color.GRAY, v2, v6, v7, v3));
-        // Topo
-        polygons.add(new Polygon(Color.WHITE, v4, v3, v7, v8));
-        // Base
-        polygons.add(new Polygon(Color.PINK, v1, v5, v6, v2));
+        polygons.add(new Polygon(Color.GRAY, true, v2, v6, v7, v3));
+        // Topo (definir cullBackFace como false para renderizar ambos os lados)
+        polygons.add(new Polygon(Color.WHITE, false, v4, v3, v7, v8));
+        // Base (definir cullBackFace como false)
+        polygons.add(new Polygon(Color.PINK, false, v1, v5, v6, v2));
     }
 
     /**

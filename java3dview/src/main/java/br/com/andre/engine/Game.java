@@ -8,6 +8,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.util.Objects;
 
 /**
  * A classe Game representa o painel principal do jogo, lidando com renderização e entrada do usuário.
@@ -32,7 +33,7 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
         this.setBackground(Color.BLACK);
 
         // Inicializa o mundo e o renderizador
-        world = new World(null);
+        world = new World("maps/map.obj");
         camera = new Camera();
         renderer = new Renderer(world, camera);
         renderer.setScreenSize(800, 600);

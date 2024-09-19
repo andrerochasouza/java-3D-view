@@ -11,8 +11,8 @@ import java.util.List;
  * A classe Renderer lida com a renderização do mundo 3D na tela 2D.
  */
 public class Renderer {
-    private World world;
-    private Camera camera;
+    private final World world;
+    private final Camera camera;
     private int screenWidth = 800;
     private int screenHeight = 600;
 
@@ -33,63 +33,83 @@ public class Renderer {
      * @param g o contexto Graphics no qual desenhar
      */
     public void render(Graphics g) {
+        // Define o fundo da tela como preto e preenche todo o espaço disponível
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, screenWidth, screenHeight);
 
+        // Lista para armazenar os polígonos que serão renderizados após transformação e projeção
         List<RenderedPolygon> renderedPolygons = new ArrayList<>();
 
+        // Itera sobre cada polígono presente no mundo
         for (Polygon polygon : world.getPolygons()) {
-            // Culling de faces traseiras
+            // Calcula o vetor normal do polígono
             Vector3 normal = calculatePolygonNormal(polygon);
-            if (normal.dot(camera.getDirection()) >= 0) {
-                continue; // Ignora o polígono se estiver de costas para a câmera
+            // Calcula o centro do polígono
+            Vector3 polygonCenter = calculatePolygonCenter(polygon);
+            // Calcula o vetor de visão (do centro do polígono para a câmera)
+            Vector3 viewVector = polygonCenter.subtract(camera.getPosition()).normalize();
+
+            // Aplica o back-face culling se estiver habilitado para este polígono
+            if (polygon.isCullBackFace()) {
+                if (normal.dot(viewVector) < 0) {
+                    continue; // Ignora o polígono se estiver de costas para a câmera
+                }
             }
 
-            // Transforma os vértices
+            // Transforma os vértices para o espaço da câmera
             List<Vector3> transformedVertices = new ArrayList<>();
             for (Vector3 vertex : polygon.getVertices()) {
                 Vector3 transformed = transformVertex(vertex);
                 transformedVertices.add(transformed);
             }
 
-            // Clipping contra o plano próximo
+            // Realiza o clipping do polígono contra o plano próximo
             transformedVertices = clipPolygonAgainstNearPlane(transformedVertices);
 
+            // Verifica se o polígono ainda possui pelo menos 3 vértices após o clipping
             if (transformedVertices.size() >= 3) {
-                // Projeta os vértices
+                // Projeta os vértices no plano 2D da tela
                 List<Vector3> projectedVertices = new ArrayList<>();
                 double averageDepth = 0;
 
                 for (Vector3 vertex : transformedVertices) {
                     Vector3 projected = projectVertex(vertex);
                     projectedVertices.add(projected);
-                    averageDepth += vertex.getZ(); // Usa a profundidade original para ordenação
+                    averageDepth += vertex.getZ(); // Acumula a profundidade Z para ordenação posterior
                 }
 
+                // Calcula a profundidade média do polígono
                 averageDepth /= transformedVertices.size();
+
+                // Cria um novo objeto RenderedPolygon com os vértices projetados, cor e profundidade média
                 RenderedPolygon renderedPolygon = new RenderedPolygon(projectedVertices, polygon.getColor(), averageDepth);
                 renderedPolygons.add(renderedPolygon);
             }
         }
 
-        // Ordena os polígonos por profundidade
+        // Ordena os polígonos por profundidade média (Z-buffer), do mais distante para o mais próximo
         renderedPolygons.sort(Comparator.comparingDouble(RenderedPolygon::getDepth).reversed());
 
-        // Renderiza os polígonos
+        // Itera sobre cada polígono renderizado para desenhá-los na tela
         for (RenderedPolygon rp : renderedPolygons) {
             List<Vector3> projectedVertices = rp.getVertices();
 
+            // Arrays para armazenar as coordenadas X e Y dos vértices projetados
             int[] xPoints = new int[projectedVertices.size()];
             int[] yPoints = new int[projectedVertices.size()];
 
+            // Extrai as coordenadas X e Y de cada vértice projetado
             for (int i = 0; i < projectedVertices.size(); i++) {
                 Vector3 v = projectedVertices.get(i);
                 xPoints[i] = (int) v.getX();
                 yPoints[i] = (int) v.getY();
             }
 
+            // Define a cor do polígono e o preenche na tela
             g.setColor(rp.getColor());
             g.fillPolygon(xPoints, yPoints, projectedVertices.size());
+
+            // Desenha o contorno do polígono com a cor preta
             g.setColor(Color.BLACK);
             g.drawPolygon(xPoints, yPoints, projectedVertices.size());
         }
@@ -187,9 +207,8 @@ public class Renderer {
         double t = (nearPlaneZ - S.getZ()) / (E.getZ() - S.getZ());
         double x = S.getX() + t * (E.getX() - S.getX());
         double y = S.getY() + t * (E.getY() - S.getY());
-        double z = nearPlaneZ;
 
-        return new Vector3(x, y, z);
+        return new Vector3(x, y, nearPlaneZ);
     }
 
     /**
@@ -212,6 +231,26 @@ public class Renderer {
     }
 
     /**
+     * Calcula o centro de um polígono.
+     *
+     * @param polygon o polígono para o qual calcular o centro
+     * @return o vetor representando o centro do polígono
+     */
+    private Vector3 calculatePolygonCenter(Polygon polygon) {
+        List<Vector3> vertices = polygon.getVertices();
+        double x = 0, y = 0, z = 0;
+        int numVertices = vertices.size();
+
+        for (Vector3 vertex : vertices) {
+            x += vertex.getX();
+            y += vertex.getY();
+            z += vertex.getZ();
+        }
+
+        return new Vector3(x / numVertices, y / numVertices, z / numVertices);
+    }
+
+    /**
      * Define o tamanho da tela para renderização.
      *
      * @param width  a largura da tela
@@ -220,54 +259,5 @@ public class Renderer {
     public void setScreenSize(int width, int height) {
         this.screenWidth = width;
         this.screenHeight = height;
-    }
-
-    /**
-     * Classe interna representando um polígono pronto para ser renderizado, contendo vértices projetados.
-     */
-    private class RenderedPolygon {
-        private List<Vector3> vertices;
-        private Color color;
-        private double depth;
-
-        /**
-         * Construtor que cria um RenderedPolygon com os vértices, cor e profundidade fornecidos.
-         *
-         * @param vertices a lista de vértices projetados
-         * @param color    a cor do polígono
-         * @param depth    a profundidade média do polígono
-         */
-        public RenderedPolygon(List<Vector3> vertices, Color color, double depth) {
-            this.vertices = vertices;
-            this.color = color;
-            this.depth = depth;
-        }
-
-        /**
-         * Obtém os vértices projetados do polígono.
-         *
-         * @return a lista de vértices
-         */
-        public List<Vector3> getVertices() {
-            return vertices;
-        }
-
-        /**
-         * Obtém a cor do polígono.
-         *
-         * @return a cor
-         */
-        public Color getColor() {
-            return color;
-        }
-
-        /**
-         * Obtém a profundidade média do polígono.
-         *
-         * @return a profundidade
-         */
-        public double getDepth() {
-            return depth;
-        }
     }
 }
