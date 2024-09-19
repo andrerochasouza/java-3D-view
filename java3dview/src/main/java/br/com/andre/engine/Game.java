@@ -9,8 +9,11 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 
+/**
+ * A classe Game representa o painel principal do jogo, lidando com renderização e entrada do usuário.
+ */
 public class Game extends JPanel implements KeyListener, MouseMotionListener {
-    private br.com.andre.graphic.Renderer renderer;
+    private Renderer renderer;
     private Camera camera;
     private World world;
     private long lastTime;
@@ -21,11 +24,14 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
     private int centerX, centerY;
     private Robot robot;
 
+    /**
+     * Construtor que inicializa o painel do jogo, renderizador, câmera e configura os ouvintes de eventos.
+     */
     public Game() {
         this.setPreferredSize(new Dimension(800, 600));
         this.setBackground(Color.BLACK);
 
-        // Passar o mapa
+        // Inicializa o mundo e o renderizador
         world = new World(null);
         camera = new Camera();
         renderer = new Renderer(world, camera);
@@ -41,8 +47,8 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
         this.addKeyListener(this);
         this.setFocusable(true);
 
-        centerX = 400;
-        centerY = 300;
+        centerX = getWidth() / 2;
+        centerY = getHeight() / 2;
 
         try {
             robot = new Robot();
@@ -65,6 +71,9 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
         });
     }
 
+    /**
+     * Atualiza o estado do jogo, incluindo movimentação da câmera e cálculo de FPS.
+     */
     private void update() {
         if (moveForward) camera.moveForward();
         if (moveBackward) camera.moveBackward();
@@ -83,6 +92,11 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
         repaint();
     }
 
+    /**
+     * Renderiza os componentes do jogo e elementos do HUD.
+     *
+     * @param g o contexto Graphics no qual desenhar
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -91,45 +105,94 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
         g.setColor(Color.WHITE);
         g.drawString(String.format("FPS: %.2f", fps), 10, 20);
         Vector3 pos = camera.getPosition();
-        g.drawString(String.format("Camera Position: (%.2f, %.2f, %.2f)", pos.getX(), pos.getY(), pos.getZ()), 10, 40);
+        g.drawString(String.format("Posição da Câmera: (%.2f, %.2f, %.2f)", pos.getX(), pos.getY(), pos.getZ()), 10, 40);
         Vector3 dir = camera.getDirection();
-        g.drawString(String.format("Camera Direction: (%.2f, %.2f, %.2f)", dir.getX(), dir.getY(), dir.getZ()), 10, 60);
+        g.drawString(String.format("Direção da Câmera: (%.2f, %.2f, %.2f)", dir.getX(), dir.getY(), dir.getZ()), 10, 60);
     }
 
+    /**
+     * Manipula eventos de pressionamento de teclas para controles de movimento.
+     *
+     * @param e o evento KeyEvent acionado quando uma tecla é pressionada
+     */
     @Override
     public void keyPressed(KeyEvent e) {
         switch (e.getKeyCode()) {
-            case KeyEvent.VK_W: moveForward = true; break;
-            case KeyEvent.VK_S: moveBackward = true; break;
-            case KeyEvent.VK_A: moveLeft = true; break;
-            case KeyEvent.VK_D: moveRight = true; break;
-            case KeyEvent.VK_ESCAPE: System.exit(0); break;
+            case KeyEvent.VK_W:
+                moveForward = true;
+                break;
+            case KeyEvent.VK_S:
+                moveBackward = true;
+                break;
+            case KeyEvent.VK_A:
+                moveLeft = true;
+                break;
+            case KeyEvent.VK_D:
+                moveRight = true;
+                break;
+            case KeyEvent.VK_ESCAPE:
+                System.exit(0);
+                break;
         }
     }
 
+    /**
+     * Manipula eventos de liberação de teclas para controles de movimento.
+     *
+     * @param e o evento KeyEvent acionado quando uma tecla é liberada
+     */
     @Override
     public void keyReleased(KeyEvent e) {
         switch (e.getKeyCode()) {
-            case KeyEvent.VK_W: moveForward = false; break;
-            case KeyEvent.VK_S: moveBackward = false; break;
-            case KeyEvent.VK_A: moveLeft = false; break;
-            case KeyEvent.VK_D: moveRight = false; break;
+            case KeyEvent.VK_W:
+                moveForward = false;
+                break;
+            case KeyEvent.VK_S:
+                moveBackward = false;
+                break;
+            case KeyEvent.VK_A:
+                moveLeft = false;
+                break;
+            case KeyEvent.VK_D:
+                moveRight = false;
+                break;
         }
     }
 
+    /**
+     * Método não utilizado, mas necessário pela interface KeyListener.
+     *
+     * @param e o evento KeyEvent acionado quando uma tecla é digitada
+     */
     @Override
-    public void keyTyped(KeyEvent e) {}
+    public void keyTyped(KeyEvent e) {
+    }
 
+    /**
+     * Manipula eventos de movimento do mouse para rotacionar a câmera.
+     *
+     * @param e o evento MouseEvent acionado quando o mouse é movido
+     */
     @Override
     public void mouseMoved(MouseEvent e) {
         handleMouseMovement(e);
     }
 
+    /**
+     * Manipula eventos de arraste do mouse para rotacionar a câmera.
+     *
+     * @param e o evento MouseEvent acionado quando o mouse é arrastado
+     */
     @Override
     public void mouseDragged(MouseEvent e) {
         handleMouseMovement(e);
     }
 
+    /**
+     * Processa o movimento do mouse para rotacionar a câmera e recentra o cursor do mouse.
+     *
+     * @param e o evento MouseEvent acionado quando o mouse é movido ou arrastado
+     */
     private void handleMouseMovement(MouseEvent e) {
         int deltaX = e.getX() - centerX;
         int deltaY = e.getY() - centerY;

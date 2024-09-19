@@ -7,17 +7,31 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * A classe Renderer lida com a renderização do mundo 3D na tela 2D.
+ */
 public class Renderer {
     private World world;
     private Camera camera;
     private int screenWidth = 800;
     private int screenHeight = 600;
 
+    /**
+     * Construtor que cria um Renderer com o mundo e a câmera especificados.
+     *
+     * @param world  o mundo a ser renderizado
+     * @param camera a câmera usada para renderização
+     */
     public Renderer(World world, Camera camera) {
         this.world = world;
         this.camera = camera;
     }
 
+    /**
+     * Renderiza o mundo no contexto Graphics fornecido.
+     *
+     * @param g o contexto Graphics no qual desenhar
+     */
     public void render(Graphics g) {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, screenWidth, screenHeight);
@@ -49,7 +63,7 @@ public class Renderer {
                 for (Vector3 vertex : transformedVertices) {
                     Vector3 projected = projectVertex(vertex);
                     projectedVertices.add(projected);
-                    averageDepth += vertex.getZ(); // Usar a profundidade original para ordenação
+                    averageDepth += vertex.getZ(); // Usa a profundidade original para ordenação
                 }
 
                 averageDepth /= transformedVertices.size();
@@ -81,6 +95,12 @@ public class Renderer {
         }
     }
 
+    /**
+     * Transforma um vértice do espaço do mundo para o espaço da câmera.
+     *
+     * @param vertex o vértice em coordenadas do mundo
+     * @return o vértice transformado em coordenadas da câmera
+     */
     private Vector3 transformVertex(Vector3 vertex) {
         // Translada o vértice em relação à posição da câmera
         Vector3 translated = vertex.subtract(camera.getPosition());
@@ -95,6 +115,12 @@ public class Renderer {
         return rotated;
     }
 
+    /**
+     * Projeta um ponto 3D na tela 2D.
+     *
+     * @param vertex o vértice em coordenadas da câmera
+     * @return o ponto 2D projetado
+     */
     private Vector3 projectVertex(Vector3 vertex) {
         // Evita divisão por zero
         double z = vertex.getZ();
@@ -112,23 +138,23 @@ public class Renderer {
         return new Vector3(x, y, z);
     }
 
+    /**
+     * Recorta um polígono contra o plano próximo para lidar com casos onde vértices estão atrás da câmera.
+     *
+     * @param vertices a lista de vértices representando o polígono
+     * @return a lista de vértices após o recorte
+     */
     private List<Vector3> clipPolygonAgainstNearPlane(List<Vector3> vertices) {
-        List<Vector3> outputList = new ArrayList<>(vertices);
+        List<Vector3> outputList = new ArrayList<>();
         double nearPlaneZ = 0.1;
 
-        List<Vector3> inputList;
-
-        // Clipping contra o plano z = nearPlaneZ
-        inputList = new ArrayList<>(outputList);
-        outputList.clear();
-
-        if (inputList.isEmpty()) {
+        if (vertices.isEmpty()) {
             return outputList;
         }
 
-        Vector3 S = inputList.get(inputList.size() - 1);
+        Vector3 S = vertices.get(vertices.size() - 1);
 
-        for (Vector3 E : inputList) {
+        for (Vector3 E : vertices) {
             boolean E_inside = E.getZ() >= nearPlaneZ;
             boolean S_inside = S.getZ() >= nearPlaneZ;
 
@@ -149,6 +175,14 @@ public class Renderer {
         return outputList;
     }
 
+    /**
+     * Calcula o ponto de interseção de uma aresta com o plano próximo.
+     *
+     * @param S          o vértice inicial da aresta
+     * @param E          o vértice final da aresta
+     * @param nearPlaneZ o valor Z do plano próximo
+     * @return o ponto de interseção no plano próximo
+     */
     private Vector3 intersectEdgeWithNearPlane(Vector3 S, Vector3 E, double nearPlaneZ) {
         double t = (nearPlaneZ - S.getZ()) / (E.getZ() - S.getZ());
         double x = S.getX() + t * (E.getX() - S.getX());
@@ -158,6 +192,12 @@ public class Renderer {
         return new Vector3(x, y, z);
     }
 
+    /**
+     * Calcula o vetor normal de um polígono.
+     *
+     * @param polygon o polígono para o qual calcular a normal
+     * @return o vetor normal normalizado do polígono
+     */
     private Vector3 calculatePolygonNormal(Polygon polygon) {
         List<Vector3> vertices = polygon.getVertices();
 
@@ -171,30 +211,61 @@ public class Renderer {
         return edge1.cross(edge2).normalize();
     }
 
+    /**
+     * Define o tamanho da tela para renderização.
+     *
+     * @param width  a largura da tela
+     * @param height a altura da tela
+     */
     public void setScreenSize(int width, int height) {
         this.screenWidth = width;
         this.screenHeight = height;
     }
 
+    /**
+     * Classe interna representando um polígono pronto para ser renderizado, contendo vértices projetados.
+     */
     private class RenderedPolygon {
         private List<Vector3> vertices;
         private Color color;
         private double depth;
 
+        /**
+         * Construtor que cria um RenderedPolygon com os vértices, cor e profundidade fornecidos.
+         *
+         * @param vertices a lista de vértices projetados
+         * @param color    a cor do polígono
+         * @param depth    a profundidade média do polígono
+         */
         public RenderedPolygon(List<Vector3> vertices, Color color, double depth) {
             this.vertices = vertices;
             this.color = color;
             this.depth = depth;
         }
 
+        /**
+         * Obtém os vértices projetados do polígono.
+         *
+         * @return a lista de vértices
+         */
         public List<Vector3> getVertices() {
             return vertices;
         }
 
+        /**
+         * Obtém a cor do polígono.
+         *
+         * @return a cor
+         */
         public Color getColor() {
             return color;
         }
 
+        /**
+         * Obtém a profundidade média do polígono.
+         *
+         * @return a profundidade
+         */
         public double getDepth() {
             return depth;
         }
