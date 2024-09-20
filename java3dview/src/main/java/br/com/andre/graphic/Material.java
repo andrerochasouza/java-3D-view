@@ -28,4 +28,12 @@ public class Material {
     public void setCullBackFace(boolean cullBackFace) {
         this.cullBackFace = cullBackFace;
     }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setDiffuseColor(Color diffuseColor) {
+        this.diffuseColor = diffuseColor;
+    }
 }

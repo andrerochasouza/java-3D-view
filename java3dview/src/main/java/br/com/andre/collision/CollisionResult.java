@@ -1,4 +1,4 @@
-package br.com.andre.object;
+package br.com.andre.collision;
 
 import br.com.andre.graphic.Vector3;
 

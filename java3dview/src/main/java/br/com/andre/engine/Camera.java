@@ -1,9 +1,9 @@
 package br.com.andre.engine;
 
 import br.com.andre.graphic.Vector3;
-import br.com.andre.object.CollisionDetector;
-import br.com.andre.object.CollisionObject;
-import br.com.andre.object.CollisionResult;
+import br.com.andre.collision.CollisionDetector;
+import br.com.andre.collision.CollisionObject;
+import br.com.andre.collision.CollisionResult;
 
 import java.util.List;
 
