@@ -110,24 +110,6 @@ public class Camera {
     }
 
     /**
-     * Atualiza os vetores de direção, direita e cima da câmera com base nos ângulos yaw e pitch atuais.
-     */
-    private void updateVectors() {
-        // Calcula o novo vetor de direção
-        direction = new Vector3(
-                Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)),
-                Math.sin(Math.toRadians(pitch)),
-                Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch))
-        ).normalize();
-
-        // Recalcula o vetor right
-        right = new Vector3(0, 1, 0).cross(direction).normalize();
-
-        // Recalcula o vetor up
-        up = right.cross(direction).normalize();
-    }
-
-    /**
      * Obtém a posição atual da câmera.
      *
      * @return o vetor posição
@@ -161,6 +143,24 @@ public class Camera {
      */
     public Vector3 getRight() {
         return right;
+    }
+
+    /**
+     * Atualiza os vetores de direção, direita e cima da câmera com base nos ângulos yaw e pitch atuais.
+     */
+    private void updateVectors() {
+        // Calcula o novo vetor de direção
+        direction = new Vector3(
+                Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)),
+                Math.sin(Math.toRadians(pitch)),
+                Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch))
+        ).normalize();
+
+        // Recalcula o vetor right
+        right = new Vector3(0, 1, 0).cross(direction).normalize();
+
+        // Recalcula o vetor up
+        up = right.cross(direction).normalize();
     }
 
     private CollisionResult checkCollision(Vector3 newPosition, List<CollisionObject> collisionObjects) {

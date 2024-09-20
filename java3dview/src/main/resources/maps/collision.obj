@@ -3,9 +3,9 @@ mtllib material.mtl
 g Floor
 usemtl FloorMaterial
 v 0 0 0
-v 1 0 0
-v 1 0 1
-v 0 0 1
+v 20 0 0
+v 20 0 20
+v 0 0 20
 f 1 2 3 4
 
 g Wall

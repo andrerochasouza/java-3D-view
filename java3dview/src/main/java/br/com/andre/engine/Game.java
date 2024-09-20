@@ -32,7 +32,7 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
         this.setBackground(Color.BLACK);
 
         // Inicializa o mundo e o renderizador
-        world = new World("maps/collision.obj");
+        world = new World("maps/maze.obj");
         camera = new Camera();
         renderer = new Renderer(world, camera);
         renderer.setScreenSize(800, 600);
