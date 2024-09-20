@@ -1,7 +1,7 @@
 package br.com.andre.engine;
 
-import br.com.andre.graphic.Vector3;
 import br.com.andre.collision.CollisionObject;
+import br.com.andre.graphic.Vector3;
 
 import javax.swing.*;
 import java.awt.*;
@@ -40,8 +40,12 @@ public class Game extends JPanel implements MouseMotionListener {
         Timer timer = new Timer(16, e -> update());
         timer.start();
 
-        centerX = getWidth() / 2;
-        centerY = getHeight() / 2;
+        // Inicializa centerX e centerY após o componente ser exibido
+        this.addHierarchyListener(e -> {
+            centerX = getWidth() / 2;
+            centerY = getHeight() / 2;
+            recenterMouse();
+        });
 
         try {
             robot = new Robot();
@@ -59,7 +63,7 @@ public class Game extends JPanel implements MouseMotionListener {
                 centerX = getWidth() / 2;
                 centerY = getHeight() / 2;
                 renderer.setScreenSize(getWidth(), getHeight());
-                robot.mouseMove(getLocationOnScreen().x + centerX, getLocationOnScreen().y + centerY);
+                recenterMouse();
             }
         });
     }
@@ -93,7 +97,7 @@ public class Game extends JPanel implements MouseMotionListener {
     }
 
     private void recenterMouse() {
-        if (robot != null) {
+        if (robot != null && centerX != 0 && centerY != 0) {
             robot.mouseMove(getLocationOnScreen().x + centerX, getLocationOnScreen().y + centerY);
         }
     }
@@ -113,6 +117,10 @@ public class Game extends JPanel implements MouseMotionListener {
 
     @Override
     public void mouseMoved(MouseEvent e) {
+        if (centerX == 0 || centerY == 0) {
+            return; // Evita movimentação do mouse antes de inicializar
+        }
+
         int deltaX = e.getX() - centerX;
         int deltaY = e.getY() - centerY;
 

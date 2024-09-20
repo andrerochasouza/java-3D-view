@@ -27,7 +27,10 @@ public class CollisionHandler {
             CollisionResult result = CollisionDetector.sphereIntersectsAABB(
                     newPosition, radius, boundingBox.getMin(), boundingBox.getMax());
             if (result.collision) {
-                System.out.println("Colisão detectada! Normal da colisão: " + result.collisionNormal);
+                // Log de depuração
+                System.out.println("Colisão detectada com AABB: " + obj.getName());
+                System.out.println("Ponto de colisão: " + result.collisionPoint);
+                System.out.println("Normal da colisão: " + result.collisionNormal);
                 return result;
             }
         }
@@ -48,6 +51,13 @@ public class CollisionHandler {
         Vector3 newPosition = position.add(movementParallel);
 
         CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
-        return collisionResult.collision ? position : newPosition;
+        if (collisionResult.collision) {
+            // Log de depuração
+            System.out.println("Deslizamento detectado. Ajustando movimento.");
+            System.out.println("Normal da colisão durante deslizamento: " + collisionResult.collisionNormal);
+            return position; // Mantém a posição atual se ainda houver colisão
+        }
+
+        return newPosition;
     }
 }

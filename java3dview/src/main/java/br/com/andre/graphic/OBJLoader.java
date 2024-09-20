@@ -70,7 +70,7 @@ public class OBJLoader {
                     polygonGraphics.add(polygon);
 
                     if ("Wall".equalsIgnoreCase(currentGroupName) || "Floor".equalsIgnoreCase(currentGroupName)) {
-                        collisionObjects.add(new CollisionObject(Arrays.asList(faceVertices)));
+                        collisionObjects.add(new CollisionObject(currentGroupName, Arrays.asList(faceVertices)));
                     }
                 }
             }

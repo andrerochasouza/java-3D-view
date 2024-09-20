@@ -32,11 +32,11 @@ public class Player {
      * Inicializa o jogador na posição inicial, olhando para o eixo -Z.
      */
     public Player() {
-        position = new Vector3(9, 5.0, -9); // Ajuste a posição inicial conforme necessário
+        position = new Vector3(9, -9.0, 5); // Ajuste a posição inicial conforme necessário
         yaw = -90; // Olhando para -Z
         pitch = 0;
-        walkSpeed = 5.0; // Velocidade de caminhada (metros por segundo)
-        runSpeed = 10.0; // Velocidade de corrida (metros por segundo)
+        walkSpeed = 10.0; // Velocidade de caminhada (m/s) aumentada
+        runSpeed = 20.0; // Velocidade de corrida (m/s) aumentada
         currentSpeed = walkSpeed;
         sensitivity = 0.1;
         radius = 0.5; // Define o raio da esfera do jogador
@@ -67,10 +67,8 @@ public class Player {
         if (!collisionResult.collision) {
             position = newPosition;
             physics.setGrounded(false);
-            // System.out.println("Colisão não detectada!");
         } else {
             if (collisionResult.collisionNormal.getY() > 0) {
-                // System.out.println("Colisão detectada!");
                 handleGroundCollision(collisionResult);
             } else {
                 position = collisionHandler.adjustMovementWithSliding(position, movement, collisionResult.collisionNormal, collisionObjects);

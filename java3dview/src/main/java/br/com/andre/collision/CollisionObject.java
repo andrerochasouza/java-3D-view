@@ -3,48 +3,51 @@ package br.com.andre.collision;
 import br.com.andre.graphic.Vector3;
 import java.util.List;
 
+/**
+ * Representa um objeto de colisão no jogo.
+ */
 public class CollisionObject {
-    private List<Vector3> vertices;
+    private String name; // Nome do objeto para identificação
     private AABB boundingBox;
 
-    public CollisionObject(List<Vector3> vertices) {
-        this.vertices = vertices;
-        this.boundingBox = calculateBoundingBox(vertices);
+    public CollisionObject(String name, Vector3 min, Vector3 max) {
+        this.name = name;
+        this.boundingBox = new AABB(min, max);
     }
 
-    public List<Vector3> getVertices() {
-        return vertices;
+    // Construtor adicional opcional
+    public CollisionObject(String name, List<Vector3> vertices) {
+        this.name = name;
+        Vector3 min = new Vector3(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+        Vector3 max = new Vector3(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
+
+        for (Vector3 vertex : vertices) {
+            min = new Vector3(
+                    Math.min(min.getX(), vertex.getX()),
+                    Math.min(min.getY(), vertex.getY()),
+                    Math.min(min.getZ(), vertex.getZ())
+            );
+            max = new Vector3(
+                    Math.max(max.getX(), vertex.getX()),
+                    Math.max(max.getY(), vertex.getY()),
+                    Math.max(max.getZ(), vertex.getZ())
+            );
+        }
+
+        this.boundingBox = new AABB(min, max);
     }
 
     public AABB getBoundingBox() {
         return boundingBox;
     }
 
-    private AABB calculateBoundingBox(List<Vector3> vertices) {
-        double minX = Double.POSITIVE_INFINITY;
-        double minY = Double.POSITIVE_INFINITY;
-        double minZ = Double.POSITIVE_INFINITY;
-        double maxX = Double.NEGATIVE_INFINITY;
-        double maxY = Double.NEGATIVE_INFINITY;
-        double maxZ = Double.NEGATIVE_INFINITY;
-
-        for (Vector3 vertex : vertices) {
-            double x = vertex.getX();
-            double y = vertex.getY();
-            double z = vertex.getZ();
-
-            if (x < minX) minX = x;
-            if (y < minY) minY = y;
-            if (z < minZ) minZ = z;
-
-            if (x > maxX) maxX = x;
-            if (y > maxY) maxY = y;
-            if (z > maxZ) maxZ = z;
-        }
-
-        return new AABB(new Vector3(minX, minY, minZ), new Vector3(maxX, maxY, maxZ));
+    public String getName() {
+        return name;
     }
 
+    /**
+     * Representa uma Axis-Aligned Bounding Box.
+     */
     public static class AABB {
         private Vector3 min;
         private Vector3 max;

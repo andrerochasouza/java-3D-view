@@ -58,6 +58,13 @@ public class Vector3 {
         return new Vector3(newX, newY, newZ);
     }
 
+    public Vector3 divide(double scalar) {
+        if (scalar == 0) {
+            throw new IllegalArgumentException("Escalar não pode ser zero.");
+        }
+        return new Vector3(this.x / scalar, this.y / scalar, this.z / scalar);
+    }
+
     public double dot(Vector3 other) {
         return this.x * other.x + this.y * other.y + this.z * other.z;
     }
