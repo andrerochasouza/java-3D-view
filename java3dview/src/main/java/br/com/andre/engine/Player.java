@@ -8,32 +8,39 @@ import br.com.andre.collision.CollisionResult;
 import java.util.List;
 
 /**
- * Representa uma câmera no espaço 3D, lidando com posição e orientação.
+ * Representa o jogador no espaço 3D, lidando com posição, orientação e funcionalidades adicionais.
  */
-public class Camera {
+public class Player {
     private Vector3 position;
     private Vector3 direction;
     private Vector3 up;
     private Vector3 right;
     private double yaw;
     private double pitch;
-    private final double speed;
-    private final double sensitivity;
     private final double radius;
 
-    public final Physics physics;
+    private double walkSpeed;
+    private double runSpeed;
+    private double currentSpeed;
+    private double sensitivity;
+    private double fov;
+
+    private final Physics physics;
     private final CollisionHandler collisionHandler;
 
     /**
-     * Inicializa a câmera na origem, olhando para o eixo -Z.
+     * Inicializa o jogador na posição inicial, olhando para o eixo -Z.
      */
-    public Camera() {
-        position = new Vector3(9, -9.0, 5); // Ajuste a posição inicial se necessário
+    public Player() {
+        position = new Vector3(9, 5.0, -9); // Ajuste a posição inicial conforme necessário
         yaw = -90; // Olhando para -Z
         pitch = 0;
-        speed = 0.1;
+        walkSpeed = 5.0; // Velocidade de caminhada (metros por segundo)
+        runSpeed = 10.0; // Velocidade de corrida (metros por segundo)
+        currentSpeed = walkSpeed;
         sensitivity = 0.1;
-        radius = 0.5; // Define o raio da esfera da câmera
+        radius = 0.5; // Define o raio da esfera do jogador
+        fov = 70.0; // Campo de visão em graus
 
         physics = new Physics();
         collisionHandler = new CollisionHandler(radius);
@@ -42,7 +49,7 @@ public class Camera {
     }
 
     /**
-     * Atualiza a câmera, aplicando física e movimentação.
+     * Atualiza o jogador, aplicando física e movimentação.
      *
      * @param deltaTime        O tempo decorrido desde a última atualização (em segundos).
      * @param collisionObjects A lista de objetos para verificação de colisão.
@@ -60,8 +67,10 @@ public class Camera {
         if (!collisionResult.collision) {
             position = newPosition;
             physics.setGrounded(false);
+            // System.out.println("Colisão não detectada!");
         } else {
             if (collisionResult.collisionNormal.getY() > 0) {
+                // System.out.println("Colisão detectada!");
                 handleGroundCollision(collisionResult);
             } else {
                 position = collisionHandler.adjustMovementWithSliding(position, movement, collisionResult.collisionNormal, collisionObjects);
@@ -72,34 +81,35 @@ public class Camera {
     private void handleGroundCollision(CollisionResult collisionResult) {
         physics.setGrounded(true);
         position = position.setY(collisionResult.collisionPoint.getY() + radius);
+        physics.resetVerticalVelocity();
     }
 
     /**
-     * Move a câmera para frente na direção em que está olhando.
+     * Move o jogador para frente na direção em que está olhando.
      */
     public void moveForward(double deltaTime, List<CollisionObject> collisionObjects) {
-        move(direction, speed * deltaTime, collisionObjects);
+        move(direction, currentSpeed * deltaTime, collisionObjects);
     }
 
     /**
-     * Move a câmera para trás, oposto à direção em que está olhando.
+     * Move o jogador para trás, oposto à direção em que está olhando.
      */
     public void moveBackward(double deltaTime, List<CollisionObject> collisionObjects) {
-        move(direction, -speed * deltaTime, collisionObjects);
+        move(direction, -currentSpeed * deltaTime, collisionObjects);
     }
 
     /**
-     * Move a câmera para a esquerda relativa à sua direção atual.
+     * Move o jogador para a esquerda relativa à sua direção atual.
      */
     public void moveLeft(double deltaTime, List<CollisionObject> collisionObjects) {
-        move(right, -speed * deltaTime, collisionObjects);
+        move(right, -currentSpeed * deltaTime, collisionObjects);
     }
 
     /**
-     * Move a câmera para a direita relativa à sua direção atual.
+     * Move o jogador para a direita relativa à sua direção atual.
      */
     public void moveRight(double deltaTime, List<CollisionObject> collisionObjects) {
-        move(right, speed * deltaTime, collisionObjects);
+        move(right, currentSpeed * deltaTime, collisionObjects);
     }
 
     private void move(Vector3 direction, double distance, List<CollisionObject> collisionObjects) {
@@ -115,7 +125,7 @@ public class Camera {
     }
 
     /**
-     * Rotaciona a câmera com base nos deltas de movimento do mouse.
+     * Rotaciona o jogador com base nos deltas de movimento do mouse.
      *
      * @param deltaX a mudança no eixo X (movimento do mouse)
      * @param deltaY a mudança no eixo Y (movimento do mouse)
@@ -152,6 +162,18 @@ public class Camera {
         return new Vector3(0, 1, 0).cross(direction);
     }
 
+    public double getFov() {
+        return fov;
+    }
+
+    public void setFov(double fov) {
+        this.fov = fov;
+    }
+
+    public void setRunning(boolean running) {
+        currentSpeed = running ? runSpeed : walkSpeed;
+    }
+
     public Vector3 getPosition() {
         return position;
     }
@@ -166,5 +188,9 @@ public class Camera {
 
     public Vector3 getRight() {
         return right;
+    }
+
+    public Physics getPhysics() {
+        return physics;
     }
 }

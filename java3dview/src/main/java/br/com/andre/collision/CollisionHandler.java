@@ -8,7 +8,6 @@ import java.util.List;
  * CollisionHandler lida com detecção e resolução de colisões.
  */
 public class CollisionHandler {
-
     private final double radius;
 
     public CollisionHandler(double radius) {
@@ -18,7 +17,7 @@ public class CollisionHandler {
     /**
      * Verifica se há colisão na nova posição.
      *
-     * @param newPosition      A nova posição da câmera.
+     * @param newPosition      A nova posição do jogador.
      * @param collisionObjects A lista de objetos para verificação de colisão.
      * @return O resultado da colisão.
      */
@@ -28,6 +27,7 @@ public class CollisionHandler {
             CollisionResult result = CollisionDetector.sphereIntersectsAABB(
                     newPosition, radius, boundingBox.getMin(), boundingBox.getMax());
             if (result.collision) {
+                System.out.println("Colisão detectada! Normal da colisão: " + result.collisionNormal);
                 return result;
             }
         }
@@ -35,9 +35,9 @@ public class CollisionHandler {
     }
 
     /**
-     * Ajusta o movimento da câmera em caso de colisão, permitindo deslizamento.
+     * Ajusta o movimento do jogador em caso de colisão, permitindo deslizamento.
      *
-     * @param position         A posição atual da câmera.
+     * @param position         A posição atual do jogador.
      * @param movement         O vetor de movimento desejado.
      * @param collisionNormal  A normal da colisão.
      * @param collisionObjects A lista de objetos para verificação de colisão.

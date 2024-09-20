@@ -7,12 +7,13 @@ import java.awt.event.KeyListener;
  * InputHandler lida com as entradas do teclado.
  */
 public class InputHandler implements KeyListener {
-    private boolean moveForward, moveBackward, moveLeft, moveRight, jump;
+    private boolean moveForward, moveBackward, moveLeft, moveRight, jump, running;
 
     public boolean isMoveForward() { return moveForward; }
     public boolean isMoveBackward() { return moveBackward; }
     public boolean isMoveLeft() { return moveLeft; }
     public boolean isMoveRight() { return moveRight; }
+    public boolean isRunning() { return running; }
 
     public boolean consumeJump() {
         boolean temp = jump;
@@ -28,6 +29,7 @@ public class InputHandler implements KeyListener {
             case KeyEvent.VK_A -> moveLeft = true;
             case KeyEvent.VK_D -> moveRight = true;
             case KeyEvent.VK_SPACE -> jump = true;
+            case KeyEvent.VK_SHIFT -> running = true;
             case KeyEvent.VK_ESCAPE -> System.exit(0);
         }
     }
@@ -39,6 +41,7 @@ public class InputHandler implements KeyListener {
             case KeyEvent.VK_S -> moveBackward = false;
             case KeyEvent.VK_A -> moveLeft = false;
             case KeyEvent.VK_D -> moveRight = false;
+            case KeyEvent.VK_SHIFT -> running = false;
         }
     }
 

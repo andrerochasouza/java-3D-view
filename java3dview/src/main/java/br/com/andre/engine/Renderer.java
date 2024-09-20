@@ -15,15 +15,14 @@ import static br.com.andre.util.CalcPolygon.calculatePolygonNormal;
  * A classe Renderer lida com a renderização do mundo 3D na tela 2D.
  */
 public class Renderer {
-
     private final World world;
-    private final Camera camera;
+    private final Player player;
     private int screenWidth = 800;
     private int screenHeight = 600;
 
-    public Renderer(World world, Camera camera) {
+    public Renderer(World world, Player player) {
         this.world = world;
-        this.camera = camera;
+        this.player = player;
     }
 
     public void setScreenSize(int width, int height) {
@@ -35,7 +34,7 @@ public class Renderer {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, screenWidth, screenHeight);
 
-        renderBSPNode(g, world.getBSPTree(), camera.getPosition());
+        renderBSPNode(g, world.getBSPTree(), player.getPosition());
     }
 
     private void renderBSPNode(Graphics g, BSPNode node, Vector3 cameraPosition) {
@@ -78,7 +77,7 @@ public class Renderer {
     private boolean isPolygonVisible(PolygonGraphic polygonGraphic) {
         Vector3 normal = calculatePolygonNormal(polygonGraphic);
         Vector3 polygonCenter = calculatePolygonCenter(polygonGraphic);
-        Vector3 viewVector = polygonCenter.subtract(camera.getPosition()).normalize();
+        Vector3 viewVector = polygonCenter.subtract(player.getPosition()).normalize();
 
         return !polygonGraphic.isCullBackFace() || normal.dot(viewVector) >= 0;
     }
@@ -92,11 +91,11 @@ public class Renderer {
     }
 
     private Vector3 transformVertex(Vector3 vertex) {
-        Vector3 translated = vertex.subtract(camera.getPosition());
+        Vector3 translated = vertex.subtract(player.getPosition());
         return new Vector3(
-                translated.dot(camera.getRight()),
-                translated.dot(camera.getUp()),
-                translated.dot(camera.getDirection())
+                translated.dot(player.getRight()),
+                translated.dot(player.getUp()),
+                translated.dot(player.getDirection())
         );
     }
 
@@ -110,7 +109,7 @@ public class Renderer {
 
     private Vector3 projectVertex(Vector3 vertex) {
         double z = vertex.getZ() == 0 ? 0.0001 : vertex.getZ();
-        double fov = Math.toRadians(70);
+        double fov = Math.toRadians(player.getFov());
         double f = screenHeight / (2 * Math.tan(fov / 2));
 
         double x = (vertex.getX() * f) / z + screenWidth / 2;

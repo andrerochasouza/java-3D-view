@@ -13,9 +13,8 @@ import java.util.List;
  * A classe Game representa o painel principal do jogo, lidando com renderização e entrada do usuário.
  */
 public class Game extends JPanel implements MouseMotionListener {
-
     private Renderer renderer;
-    private Camera camera;
+    private Player player;
     private World world;
     private FPSCounter fpsCounter;
     private InputHandler inputHandler;
@@ -27,8 +26,8 @@ public class Game extends JPanel implements MouseMotionListener {
         this.setBackground(Color.BLACK);
 
         world = new World("maps/maze.obj");
-        camera = new Camera();
-        renderer = new Renderer(world, camera);
+        player = new Player();
+        renderer = new Renderer(world, player);
         renderer.setScreenSize(800, 600);
 
         inputHandler = new InputHandler();
@@ -67,26 +66,30 @@ public class Game extends JPanel implements MouseMotionListener {
 
     private void update() {
         fpsCounter.update();
-        updateCamera();
+        updatePlayer();
         repaint();
     }
 
-    private void updateCamera() {
+    private void updatePlayer() {
         List<CollisionObject> collisionObjects = world.getCollisionObjects();
         double deltaTime = fpsCounter.getDeltaTime();
 
-        camera.update(deltaTime, collisionObjects);
+        player.update(deltaTime, collisionObjects);
 
-        if (inputHandler.isMoveForward()) camera.moveForward(deltaTime, collisionObjects);
-        if (inputHandler.isMoveBackward()) camera.moveBackward(deltaTime, collisionObjects);
-        if (inputHandler.isMoveLeft()) camera.moveLeft(deltaTime, collisionObjects);
-        if (inputHandler.isMoveRight()) camera.moveRight(deltaTime, collisionObjects);
+        if (inputHandler.isMoveForward()) player.moveForward(deltaTime, collisionObjects);
+        if (inputHandler.isMoveBackward()) player.moveBackward(deltaTime, collisionObjects);
+        if (inputHandler.isMoveLeft()) player.moveLeft(deltaTime, collisionObjects);
+        if (inputHandler.isMoveRight()) player.moveRight(deltaTime, collisionObjects);
+
         if (inputHandler.consumeJump()) {
-            if (camera.physics.isGrounded()) {
-                camera.physics.applyVerticalForce(5.0);
-                camera.physics.setGrounded(false);
+            if (player.getPhysics().isGrounded()) {
+                player.getPhysics().applyVerticalForce(5.0); // Força do salto
+                player.getPhysics().setGrounded(false);
             }
         }
+
+        // Verifica se o jogador está correndo
+        player.setRunning(inputHandler.isRunning());
     }
 
     private void recenterMouse() {
@@ -102,10 +105,10 @@ public class Game extends JPanel implements MouseMotionListener {
 
         g.setColor(Color.WHITE);
         g.drawString(String.format("FPS: %.2f", fpsCounter.getFPS()), 10, 20);
-        Vector3 pos = camera.getPosition();
-        g.drawString(String.format("Posição da Câmera: (%.2f, %.2f, %.2f)", pos.getX(), pos.getY(), pos.getZ()), 10, 40);
-        Vector3 dir = camera.getDirection();
-        g.drawString(String.format("Direção da Câmera: (%.2f, %.2f, %.2f)", dir.getX(), dir.getY(), dir.getZ()), 10, 60);
+        Vector3 pos = player.getPosition();
+        g.drawString(String.format("Posição do Jogador: (%.2f, %.2f, %.2f)", pos.getX(), pos.getY(), pos.getZ()), 10, 40);
+        Vector3 dir = player.getDirection();
+        g.drawString(String.format("Direção do Jogador: (%.2f, %.2f, %.2f)", dir.getX(), dir.getY(), dir.getZ()), 10, 60);
     }
 
     @Override
@@ -113,7 +116,7 @@ public class Game extends JPanel implements MouseMotionListener {
         int deltaX = e.getX() - centerX;
         int deltaY = e.getY() - centerY;
 
-        camera.rotate(-deltaX, -deltaY);
+        player.rotate(-deltaX, -deltaY);
         recenterMouse();
     }
 
