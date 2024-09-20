@@ -63,23 +63,47 @@ public class Player {
     }
 
     private void handleCollisionAndMovement(Vector3 newPosition, Vector3 movement, List<CollisionObject> collisionObjects) {
-        CollisionResult collisionResult = collisionHandler.checkCollision(newPosition, collisionObjects);
-        if (!collisionResult.collision) {
-            position = newPosition;
-            physics.setGrounded(false);
-        } else {
-            if (collisionResult.collisionNormal.getY() > 0) {
-                handleGroundCollision(collisionResult);
-            } else {
-                position = collisionHandler.adjustMovementWithSliding(position, movement, collisionResult.collisionNormal, collisionObjects);
-            }
-        }
-    }
+        // Separar movimentação vertical e horizontal
+        Vector3 verticalMovement = new Vector3(0, movement.getY(), 0);
+        Vector3 horizontalMovement = new Vector3(movement.getX(), 0, movement.getZ());
 
-    private void handleGroundCollision(CollisionResult collisionResult) {
-        physics.setGrounded(true);
-        position = position.setY(collisionResult.collisionPoint.getY() + radius);
-        physics.resetVerticalVelocity();
+        // Movimentação Vertical
+        Vector3 newVerticalPosition = position.add(verticalMovement);
+        CollisionResult verticalCollision = collisionHandler.checkCollision(newVerticalPosition, collisionObjects);
+
+        if (verticalCollision.collision) {
+            if (verticalCollision.collisionNormal.getY() > 0) {
+                // Colisão com o chão
+                position = new Vector3(newVerticalPosition.getX(), verticalCollision.collisionPoint.getY() + radius, newVerticalPosition.getZ());
+                physics.setGrounded(true);
+                physics.resetVerticalVelocity();
+                System.out.println("Jogador aterrissou no chão. Nova posição: " + position);
+            } else {
+                // Colisão com o teto
+                position = new Vector3(newVerticalPosition.getX(), verticalCollision.collisionPoint.getY() - radius, newVerticalPosition.getZ());
+                physics.setGrounded(false);
+                physics.resetVerticalVelocity();
+                System.out.println("Jogador colidiu com o teto. Nova posição: " + position);
+            }
+        } else {
+            position = newVerticalPosition;
+            physics.setGrounded(false);
+            System.out.println("Jogador está no ar. Nova posição: " + position);
+        }
+
+        // Movimentação Horizontal
+        Vector3 newHorizontalPosition = position.add(horizontalMovement);
+        CollisionResult horizontalCollision = collisionHandler.checkCollision(newHorizontalPosition, collisionObjects);
+
+        if (horizontalCollision.collision) {
+            // Ajusta movimentação paralela à superfície colidida
+            Vector3 adjustedMovement = horizontalMovement.subtract(horizontalCollision.collisionNormal.multiply(horizontalMovement.dot(horizontalCollision.collisionNormal)));
+            position = position.add(adjustedMovement);
+            System.out.println("Jogador colidiu horizontalmente. Nova posição: " + position);
+        } else {
+            position = newHorizontalPosition;
+            System.out.println("Jogador moveu horizontalmente. Nova posição: " + position);
+        }
     }
 
     /**
