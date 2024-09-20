@@ -7,6 +7,9 @@ import br.com.andre.graphic.Vector3;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Classe responsável por gerenciar a física no jogo, incluindo a aplicação de forças, atualização de corpos e detecção de colisões.
+ */
 public class PhysicsEngine {
     private List<PhysicsBody> bodies;
     private Vector3 gravity;
@@ -16,14 +19,29 @@ public class PhysicsEngine {
         gravity = new Vector3(0, -9.81, 0); // Gravidade apontando para baixo
     }
 
+    /**
+     * Adiciona um corpo físico ao motor de física.
+     *
+     * @param body O corpo físico a ser adicionado.
+     */
     public void addBody(PhysicsBody body) {
         bodies.add(body);
     }
 
+    /**
+     * Remove um corpo físico do motor de física.
+     *
+     * @param body O corpo físico a ser removido.
+     */
     public void removeBody(PhysicsBody body) {
         bodies.remove(body);
     }
 
+    /**
+     * Atualiza a física de todos os corpos no motor.
+     *
+     * @param deltaTime O tempo decorrido desde a última atualização (em segundos).
+     */
     public void update(double deltaTime) {
         // Aplica gravidade
         for (PhysicsBody body : bodies) {
@@ -41,6 +59,9 @@ public class PhysicsEngine {
         handleCollisions();
     }
 
+    /**
+     * Detecta e resolve colisões entre os corpos.
+     */
     private void handleCollisions() {
         for (int i = 0; i < bodies.size(); i++) {
             PhysicsBody bodyA = bodies.get(i);
@@ -59,6 +80,13 @@ public class PhysicsEngine {
         }
     }
 
+    /**
+     * Resolve a colisão entre dois corpos físicos.
+     *
+     * @param bodyA         O primeiro corpo envolvido na colisão.
+     * @param bodyB         O segundo corpo envolvido na colisão.
+     * @param collisionInfo Informações sobre a colisão.
+     */
     private void resolveCollision(PhysicsBody bodyA, PhysicsBody bodyB, CollisionInfo collisionInfo) {
         RigidBody dynamicBody;
         PhysicsBody otherBody;
@@ -93,8 +121,15 @@ public class PhysicsEngine {
         double velocityAlongNormal = velocity.dot(normal);
 
         if (velocityAlongNormal < 0) {
-            Vector3 reflectedVelocity = velocity.subtract(normal.multiply(2 * velocityAlongNormal));
-            dynamicBody.setVelocity(reflectedVelocity);
+            // Coeficiente de restituição (0 para sem rebote)
+            double restitution = 0.0;
+
+            // Calcula o impulso
+            double impulseMagnitude = -(1 + restitution) * velocityAlongNormal;
+            impulseMagnitude /= dynamicBody.getInverseMass();
+
+            Vector3 impulse = normal.multiply(impulseMagnitude);
+            dynamicBody.setVelocity(dynamicBody.getVelocity().add(impulse.multiply(dynamicBody.getInverseMass())));
         }
 
         // Notificar sobre a colisão

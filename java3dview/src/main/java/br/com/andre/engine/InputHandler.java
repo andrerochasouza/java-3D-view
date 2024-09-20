@@ -51,7 +51,7 @@ public class InputHandler implements KeyListener {
     }
 
     /**
-     * Metodo para atualizar o estado das teclas (se necessario).
+     * Método para atualizar o estado das teclas (se necessário).
      * Pode ser utilizado se houver lógica adicional de atualização.
      */
     public void update() {

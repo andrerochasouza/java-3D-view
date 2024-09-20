@@ -3,7 +3,7 @@ package br.com.andre.physic;
 import br.com.andre.collision.Collider;
 import br.com.andre.graphic.Vector3;
 
-public class StaticBody implements PhysicsBody {
+public class StaticBody extends PhysicsBody {
     private Collider collider;
 
     public StaticBody(Collider collider) {
@@ -25,7 +25,6 @@ public class StaticBody implements PhysicsBody {
         return collider;
     }
 
-    @Override
     public void applyForce(Vector3 force) {
         // Corpos estáticos não respondem a forças
     }
@@ -36,12 +35,27 @@ public class StaticBody implements PhysicsBody {
     }
 
     @Override
+    public void setPosition(Vector3 position) {
+
+    }
+
+    @Override
     public Vector3 getVelocity() {
         return new Vector3(0, 0, 0);
     }
 
     @Override
+    public void setVelocity(Vector3 velocity) {
+
+    }
+
+    @Override
     public double getMass() {
+        return 0;
+    }
+
+    @Override
+    public double getInverseMass() {
         return 0;
     }
 }

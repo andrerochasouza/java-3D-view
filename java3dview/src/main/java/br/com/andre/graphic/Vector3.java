@@ -1,9 +1,7 @@
 package br.com.andre.graphic;
 
 public class Vector3 {
-    private double x;
-    private double y;
-    private double z;
+    private double x, y, z;
 
     public Vector3(double x, double y, double z) {
         this.x = x;

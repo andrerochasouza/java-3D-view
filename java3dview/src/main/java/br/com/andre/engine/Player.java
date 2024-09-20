@@ -42,6 +42,7 @@ public class Player implements CollisionListener {
 
         updateDirectionVectors();
 
+        // Adiciona o Player como CollisionListener do rigidBody
         rigidBody.addCollisionListener(this);
     }
 
@@ -151,6 +152,12 @@ public class Player implements CollisionListener {
         return grounded;
     }
 
+    /**
+     * Método chamado quando uma colisão ocorre.
+     *
+     * @param collisionInfo Informações sobre a colisão.
+     * @param otherBody     O outro corpo envolvido na colisão.
+     */
     @Override
     public void onCollision(CollisionInfo collisionInfo, PhysicsBody otherBody) {
         if (collisionInfo.getCollisionNormal().getY() > 0.7) { // Ajuste o limiar conforme necessário

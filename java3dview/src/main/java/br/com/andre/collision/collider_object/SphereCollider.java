@@ -4,6 +4,9 @@ import br.com.andre.collision.Collider;
 import br.com.andre.collision.CollisionInfo;
 import br.com.andre.graphic.Vector3;
 
+/**
+ * Colisor de esfera para detecção de colisões.
+ */
 public class SphereCollider implements Collider {
     private Vector3 position;
     private double radius;
@@ -30,36 +33,41 @@ public class SphereCollider implements Collider {
         } else if (other instanceof AABBCollider) {
             return checkCollisionWithAABB((AABBCollider) other);
         }
+        // Implementar outros tipos de colisores se necessário
         return new CollisionInfo(false, null, null);
     }
 
     private CollisionInfo checkCollisionWithSphere(SphereCollider other) {
-        Vector3 difference = other.position.subtract(this.position);
-        double distanceSquared = difference.lengthSquared();
+        Vector3 delta = this.position.subtract(other.position);
+        double distanceSquared = delta.lengthSquared();
         double radiusSum = this.radius + other.radius;
-        if (distanceSquared <= radiusSum * radiusSum) {
-            double distance = Math.sqrt(distanceSquared);
-            Vector3 collisionNormal = difference.divide(distance);
-            Vector3 penetrationDepth = collisionNormal.multiply(radiusSum - distance);
-            return new CollisionInfo(true, collisionNormal, penetrationDepth);
+
+        if (distanceSquared > radiusSum * radiusSum) {
+            return new CollisionInfo(false, null, null);
         }
-        return new CollisionInfo(false, null, null);
+
+        double distance = Math.sqrt(distanceSquared);
+        Vector3 normal = distance > 0 ? delta.divide(distance) : new Vector3(1, 0, 0);
+        double penetration = radiusSum - distance;
+        Vector3 penetrationDepth = normal.multiply(penetration);
+
+        return new CollisionInfo(true, normal, penetrationDepth);
     }
 
-    private CollisionInfo checkCollisionWithAABB(AABBCollider other) {
-        Vector3 closestPoint = other.getClosestPoint(position);
-        Vector3 difference = position.subtract(closestPoint);
-        double distanceSquared = difference.lengthSquared();
+    private CollisionInfo checkCollisionWithAABB(AABBCollider aabb) {
+        Vector3 closestPoint = aabb.getClosestPoint(this.position);
+        Vector3 delta = this.position.subtract(closestPoint);
+        double distanceSquared = delta.lengthSquared();
 
-        if (distanceSquared <= radius * radius) {
-            double distance = Math.sqrt(distanceSquared);
-            if (distance == 0) {
-                return new CollisionInfo(true, new Vector3(0, 1, 0), new Vector3(0, radius, 0));
-            }
-            Vector3 collisionNormal = difference.divide(distance);
-            Vector3 penetrationDepth = collisionNormal.multiply(radius - distance);
-            return new CollisionInfo(true, collisionNormal, penetrationDepth);
+        if (distanceSquared > this.radius * this.radius) {
+            return new CollisionInfo(false, null, null);
         }
-        return new CollisionInfo(false, null, null);
+
+        double distance = Math.sqrt(distanceSquared);
+        Vector3 normal = distance > 0 ? delta.divide(distance) : new Vector3(1, 0, 0);
+        double penetration = this.radius - distance;
+        Vector3 penetrationDepth = normal.multiply(penetration);
+
+        return new CollisionInfo(true, normal, penetrationDepth);
     }
 }
