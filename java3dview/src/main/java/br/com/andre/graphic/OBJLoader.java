@@ -3,9 +3,14 @@ package br.com.andre.graphic;
 import br.com.andre.collision.CollisionObject;
 
 import java.awt.*;
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * OBJLoader carrega modelos OBJ e materiais associados.
@@ -22,6 +27,10 @@ public class OBJLoader {
         List<Vector3> vertices = new ArrayList<>();
         String currentMaterialName = null;
         String currentGroupName = null;
+
+        // Mapas para rastrear min e max por grupo
+        Map<String, Vector3> groupMins = new HashMap<>();
+        Map<String, Vector3> groupMaxs = new HashMap<>();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(objStream))) {
             String line;
@@ -69,54 +78,83 @@ public class OBJLoader {
                     PolygonGraphic polygon = new PolygonGraphic(currentGroupName, color, cullBackFace, faceVertices);
                     polygonGraphics.add(polygon);
 
+                    // Verifica se o grupo atual é "Wall" ou "Floor"
                     if ("Wall".equalsIgnoreCase(currentGroupName) || "Floor".equalsIgnoreCase(currentGroupName)) {
-                        collisionObjects.add(new CollisionObject(currentGroupName, Arrays.asList(faceVertices)));
+                        // Inicializa os valores min e max para o grupo se ainda não estiverem
+                        if (!groupMins.containsKey(currentGroupName)) {
+                            groupMins.put(currentGroupName, new Vector3(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE));
+                            groupMaxs.put(currentGroupName, new Vector3(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE));
+                        }
+
+                        Vector3 currentMin = groupMins.get(currentGroupName);
+                        Vector3 currentMax = groupMaxs.get(currentGroupName);
+
+                        // Atualiza os valores min e max com os vértices do polígono atual
+                        for (Vector3 vertex : faceVertices) {
+                            if (vertex.getX() < currentMin.getX()) currentMin = currentMin.setX(vertex.getX());
+                            if (vertex.getY() < currentMin.getY()) currentMin = currentMin.setY(vertex.getY());
+                            if (vertex.getZ() < currentMin.getZ()) currentMin = currentMin.setZ(vertex.getZ());
+
+                            if (vertex.getX() > currentMax.getX()) currentMax = currentMax.setX(vertex.getX());
+                            if (vertex.getY() > currentMax.getY()) currentMax = currentMax.setY(vertex.getY());
+                            if (vertex.getZ() > currentMax.getZ()) currentMax = currentMax.setZ(vertex.getZ());
+                        }
+
+                        // Atualiza os mapas com os novos valores min e max
+                        groupMins.put(currentGroupName, currentMin);
+                        groupMaxs.put(currentGroupName, currentMax);
                     }
                 }
+            }
+
+            // Após processar todas as linhas, cria os CollisionObjects com os limites calculados
+            for (String groupName : groupMins.keySet()) {
+                Vector3 min = groupMins.get(groupName);
+                Vector3 max = groupMaxs.get(groupName);
+                collisionObjects.add(new CollisionObject(groupName, min, max));
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static void loadMaterials(String mtlFileName, Map<String, Material> materials) {
-        InputStream mtlStream = OBJLoader.class.getClassLoader().getResourceAsStream(mtlFileName);
-
+    private static void loadMaterials(String mtlPath, Map<String, Material> materials) {
+        InputStream mtlStream = OBJLoader.class.getResourceAsStream("/" + mtlPath);
         if (mtlStream == null) {
-            System.err.println("Arquivo MTL não encontrado: " + mtlFileName);
-            return;
+            throw new IllegalArgumentException("Arquivo MTL não encontrado: " + mtlPath);
         }
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(mtlStream))) {
             String line;
-            Material currentMaterial = null;
+            String currentMaterialName = null;
+            Color diffuseColor = Color.LIGHT_GRAY;
+            boolean cullBackFace = true;
+
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
-                if (line.contains("#")) {
-                    line = line.split("#")[0].trim();
-                }
-                if (line.isEmpty()) continue;
-
                 if (line.startsWith("newmtl ")) {
-                    String materialName = line.substring(7).trim();
-                    currentMaterial = new Material(materialName, Color.LIGHT_GRAY, false);
-                    materials.put(materialName, currentMaterial);
+                    if (currentMaterialName != null) {
+                        materials.put(currentMaterialName, new Material(currentMaterialName, diffuseColor, cullBackFace));
+                    }
+                    currentMaterialName = line.substring(7).trim();
+                    diffuseColor = Color.LIGHT_GRAY;
+                    cullBackFace = true;
                 } else if (line.startsWith("Kd ")) {
-                    if (currentMaterial != null) {
-                        String[] parts = line.split("\\s+");
-                        float r = Float.parseFloat(parts[1]);
-                        float g = Float.parseFloat(parts[2]);
-                        float b = Float.parseFloat(parts[3]);
-                        Color diffuseColor = new Color(r, g, b);
-                        currentMaterial.setDiffuseColor(diffuseColor);
-                    }
-                } else if (line.startsWith("cullBackFace ")) {
-                    if (currentMaterial != null) {
-                        String value = line.substring(13).trim();
-                        boolean cullBackFace = Boolean.parseBoolean(value);
-                        currentMaterial.setCullBackFace(cullBackFace);
-                    }
+                    String[] parts = line.split("\\s+");
+                    float r = Float.parseFloat(parts[1]);
+                    float g = Float.parseFloat(parts[2]);
+                    float b = Float.parseFloat(parts[3]);
+                    diffuseColor = new Color(r, g, b);
+                } else if (line.startsWith("illum ")) {
+                    // Por exemplo, para definir se deve ou não culling
+                    String illum = line.substring(6).trim();
+                    cullBackFace = !"0".equals(illum);
                 }
+            }
+
+            // Adiciona o último material
+            if (currentMaterialName != null) {
+                materials.put(currentMaterialName, new Material(currentMaterialName, diffuseColor, cullBackFace));
             }
         } catch (IOException e) {
             e.printStackTrace();

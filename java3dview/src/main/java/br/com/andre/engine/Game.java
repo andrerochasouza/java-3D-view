@@ -1,7 +1,8 @@
 package br.com.andre.engine;
 
-import br.com.andre.collision.CollisionObject;
 import br.com.andre.graphic.Vector3;
+import br.com.andre.physic.PhysicsBody;
+import br.com.andre.physic.PhysicsEngine;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,14 +10,11 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
-/**
- * A classe Game representa o painel principal do jogo, lidando com renderização e entrada do usuário.
- */
 public class Game extends JPanel implements MouseMotionListener {
     private Renderer renderer;
     private Player player;
     private World world;
-    private FPSCounter fpsCounter;
+    private PhysicsEngine physicsEngine;
     private InputHandler inputHandler;
     private int centerX, centerY;
     private Robot robot;
@@ -25,17 +23,32 @@ public class Game extends JPanel implements MouseMotionListener {
         this.setPreferredSize(new Dimension(800, 600));
         this.setBackground(Color.BLACK);
 
-        world = new World("maps/maze.obj");
-        player = new Player();
-        renderer = new Renderer(world, player);
-        renderer.setScreenSize(800, 600);
-
+        // Inicializa o handler de entrada
         inputHandler = new InputHandler();
         this.addKeyListener(inputHandler);
         this.addMouseMotionListener(this);
         this.setFocusable(true);
 
-        fpsCounter = new FPSCounter();
+        // Inicializa o mundo e carrega objetos de colisão
+        world = new World("maps/maze.obj");
+
+        // Inicializa o jogador, passando o inputHandler
+        Vector3 playerStartPosition = new Vector3(0, 5.0, 9);
+        player = new Player(playerStartPosition, inputHandler);
+
+        // Inicializa o motor de física
+        physicsEngine = new PhysicsEngine();
+        physicsEngine.addBody(player.getRigidBody());
+
+        // Adiciona corpos estáticos ao motor de física
+        List<PhysicsBody> staticBodies = world.getStaticPhysicsBodies();
+        for (PhysicsBody body : staticBodies) {
+            physicsEngine.addBody(body);
+        }
+
+        // Inicializa o renderizador
+        renderer = new Renderer(world, player);
+        renderer.setScreenSize(800, 600);
 
         Timer timer = new Timer(16, e -> update());
         timer.start();
@@ -69,31 +82,15 @@ public class Game extends JPanel implements MouseMotionListener {
     }
 
     private void update() {
-        fpsCounter.update();
-        updatePlayer();
+        double deltaTime = 0.016; // Aproximadamente 60 FPS
+
+        // Atualiza jogador
+        player.update(deltaTime);
+
+        // Atualiza física
+        physicsEngine.update(deltaTime);
+
         repaint();
-    }
-
-    private void updatePlayer() {
-        List<CollisionObject> collisionObjects = world.getCollisionObjects();
-        double deltaTime = fpsCounter.getDeltaTime();
-
-        player.update(deltaTime, collisionObjects);
-
-        if (inputHandler.isMoveForward()) player.moveForward(deltaTime, collisionObjects);
-        if (inputHandler.isMoveBackward()) player.moveBackward(deltaTime, collisionObjects);
-        if (inputHandler.isMoveLeft()) player.moveLeft(deltaTime, collisionObjects);
-        if (inputHandler.isMoveRight()) player.moveRight(deltaTime, collisionObjects);
-
-        if (inputHandler.consumeJump()) {
-            if (player.getPhysics().isGrounded()) {
-                player.getPhysics().applyVerticalForce(5.0); // Força do salto
-                player.getPhysics().setGrounded(false);
-            }
-        }
-
-        // Verifica se o jogador está correndo
-        player.setRunning(inputHandler.isRunning());
     }
 
     private void recenterMouse() {
@@ -108,11 +105,8 @@ public class Game extends JPanel implements MouseMotionListener {
         renderer.render(g);
 
         g.setColor(Color.WHITE);
-        g.drawString(String.format("FPS: %.2f", fpsCounter.getFPS()), 10, 20);
         Vector3 pos = player.getPosition();
-        g.drawString(String.format("Posição do Jogador: (%.2f, %.2f, %.2f)", pos.getX(), pos.getY(), pos.getZ()), 10, 40);
-        Vector3 dir = player.getDirection();
-        g.drawString(String.format("Direção do Jogador: (%.2f, %.2f, %.2f)", dir.getX(), dir.getY(), dir.getZ()), 10, 60);
+        g.drawString(String.format("Posição do Jogador: (%.2f, %.2f, %.2f)", pos.getX(), pos.getY(), pos.getZ()), 10, 20);
     }
 
     @Override
@@ -124,7 +118,8 @@ public class Game extends JPanel implements MouseMotionListener {
         int deltaX = e.getX() - centerX;
         int deltaY = e.getY() - centerY;
 
-        player.rotate(-deltaX, -deltaY);
+        // Remove a inversão dos deltas
+        player.rotate(deltaX, deltaY);
         recenterMouse();
     }
 

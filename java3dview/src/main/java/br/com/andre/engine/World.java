@@ -2,10 +2,14 @@ package br.com.andre.engine;
 
 import br.com.andre.bsp.BSPNode;
 import br.com.andre.bsp.BSPTreeBuilder;
+import br.com.andre.collision.CollisionObject;
+import br.com.andre.collision.collider_object.AABBCollider;
 import br.com.andre.graphic.Material;
 import br.com.andre.graphic.OBJLoader;
 import br.com.andre.graphic.PolygonGraphic;
-import br.com.andre.collision.CollisionObject;
+import br.com.andre.graphic.Vector3;
+import br.com.andre.physic.PhysicsBody;
+import br.com.andre.physic.StaticBody;
 
 import java.util.*;
 
@@ -38,5 +42,50 @@ public class World {
 
     public List<CollisionObject> getCollisionObjects() {
         return collisionObjects;
+    }
+
+    public List<PolygonGraphic> getPolygonGraphics() {
+        return polygonGraphics;
+    }
+
+    public void setPolygonGraphics(List<PolygonGraphic> polygonGraphics) {
+        this.polygonGraphics = polygonGraphics;
+    }
+
+    public Map<String, Material> getMaterials() {
+        return materials;
+    }
+
+    public void setMaterials(Map<String, Material> materials) {
+        this.materials = materials;
+    }
+
+    public BSPNode getBspTree() {
+        return bspTree;
+    }
+
+    public void setBspTree(BSPNode bspTree) {
+        this.bspTree = bspTree;
+    }
+
+    public void setCollisionObjects(List<CollisionObject> collisionObjects) {
+        this.collisionObjects = collisionObjects;
+    }
+
+    /**
+     * Converte os CollisionObjects em StaticBodies com AABBColliders.
+     *
+     * @return Uma lista de PhysicsBody estáticos.
+     */
+    public List<PhysicsBody> getStaticPhysicsBodies() {
+        List<PhysicsBody> staticBodies = new ArrayList<>();
+        for (CollisionObject collisionObject : collisionObjects) {
+            Vector3 min = collisionObject.getMin();
+            Vector3 max = collisionObject.getMax();
+            AABBCollider aabb = new AABBCollider(min, max);
+            StaticBody staticBody = new StaticBody(aabb);
+            staticBodies.add(staticBody);
+        }
+        return staticBodies;
     }
 }

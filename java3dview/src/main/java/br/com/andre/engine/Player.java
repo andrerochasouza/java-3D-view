@@ -1,149 +1,93 @@
 package br.com.andre.engine;
 
+import br.com.andre.collision.CollisionInfo;
+import br.com.andre.collision.CollisionListener;
+import br.com.andre.collision.collider_object.SphereCollider;
 import br.com.andre.graphic.Vector3;
-import br.com.andre.collision.CollisionHandler;
-import br.com.andre.collision.CollisionObject;
-import br.com.andre.collision.CollisionResult;
+import br.com.andre.physic.PhysicsBody;
+import br.com.andre.physic.RigidBody;
 
-import java.util.List;
 
-/**
- * Representa o jogador no espaço 3D, lidando com posição, orientação e funcionalidades adicionais.
- */
-public class Player {
-    private Vector3 position;
-    private Vector3 direction;
-    private Vector3 up;
-    private Vector3 right;
+public class Player implements CollisionListener {
+    private RigidBody rigidBody;
+    private double moveForce;
+    private double jumpForce;
     private double yaw;
     private double pitch;
-    private final double radius;
-
-    private double walkSpeed;
-    private double runSpeed;
-    private double currentSpeed;
     private double sensitivity;
     private double fov;
 
-    private final Physics physics;
-    private final CollisionHandler collisionHandler;
+    private Vector3 direction;
+    private Vector3 right;
+    private Vector3 up;
 
-    /**
-     * Inicializa o jogador na posição inicial, olhando para o eixo -Z.
-     */
-    public Player() {
-        position = new Vector3(9, -9.0, 5); // Ajuste a posição inicial conforme necessário
-        yaw = -90; // Olhando para -Z
+    private boolean grounded;
+
+    private InputHandler inputHandler; // Instância de InputHandler
+
+    public Player(Vector3 startPosition, InputHandler inputHandler) {
+        this.inputHandler = inputHandler; // Inicializa o campo inputHandler
+
+        double mass = 70.0; // Massa média de um humano
+        double radius = 0.5; // Raio do colisor do jogador
+        SphereCollider collider = new SphereCollider(startPosition, radius);
+        rigidBody = new RigidBody(startPosition, mass, collider);
+
+        moveForce = 2000.0; // Força aplicada para movimentação
+        jumpForce = 500000.0; // Força aplicada para salto
+        yaw = -90;
         pitch = 0;
-        walkSpeed = 10.0; // Velocidade de caminhada (m/s) aumentada
-        runSpeed = 20.0; // Velocidade de corrida (m/s) aumentada
-        currentSpeed = walkSpeed;
         sensitivity = 0.1;
-        radius = 0.5; // Define o raio da esfera do jogador
-        fov = 70.0; // Campo de visão em graus
+        fov = 70.0;
 
-        physics = new Physics();
-        collisionHandler = new CollisionHandler(radius);
+        updateDirectionVectors();
 
-        updateVectors();
+        rigidBody.addCollisionListener(this);
     }
 
     /**
      * Atualiza o jogador, aplicando física e movimentação.
      *
-     * @param deltaTime        O tempo decorrido desde a última atualização (em segundos).
-     * @param collisionObjects A lista de objetos para verificação de colisão.
+     * @param deltaTime O tempo decorrido desde a última atualização (em segundos).
      */
-    public void update(double deltaTime, List<CollisionObject> collisionObjects) {
-        physics.update(deltaTime);
-        Vector3 movement = physics.getVelocity().multiply(deltaTime);
-        Vector3 newPosition = position.add(movement);
+    public void update(double deltaTime) {
+        // Resetar o estado de aterrissagem a cada frame
+        grounded = false;
 
-        handleCollisionAndMovement(newPosition, movement, collisionObjects);
-    }
+        // Processa entrada do usuário e aplica forças
+        Vector3 movementDirection = new Vector3(0, 0, 0);
 
-    private void handleCollisionAndMovement(Vector3 newPosition, Vector3 movement, List<CollisionObject> collisionObjects) {
-        // Separar movimentação vertical e horizontal
-        Vector3 verticalMovement = new Vector3(0, movement.getY(), 0);
-        Vector3 horizontalMovement = new Vector3(movement.getX(), 0, movement.getZ());
-
-        // Movimentação Vertical
-        Vector3 newVerticalPosition = position.add(verticalMovement);
-        CollisionResult verticalCollision = collisionHandler.checkCollision(newVerticalPosition, collisionObjects);
-
-        if (verticalCollision.collision) {
-            if (verticalCollision.collisionNormal.getY() > 0) {
-                // Colisão com o chão
-                position = new Vector3(newVerticalPosition.getX(), verticalCollision.collisionPoint.getY() + radius, newVerticalPosition.getZ());
-                physics.setGrounded(true);
-                physics.resetVerticalVelocity();
-                System.out.println("Jogador aterrissou no chão. Nova posição: " + position);
-            } else {
-                // Colisão com o teto
-                position = new Vector3(newVerticalPosition.getX(), verticalCollision.collisionPoint.getY() - radius, newVerticalPosition.getZ());
-                physics.setGrounded(false);
-                physics.resetVerticalVelocity();
-                System.out.println("Jogador colidiu com o teto. Nova posição: " + position);
-            }
-        } else {
-            position = newVerticalPosition;
-            physics.setGrounded(false);
-            System.out.println("Jogador está no ar. Nova posição: " + position);
+        if (inputHandler.isMoveForward()) {
+            movementDirection = movementDirection.add(direction);
+        }
+        if (inputHandler.isMoveBackward()) {
+            movementDirection = movementDirection.subtract(direction);
+        }
+        if (inputHandler.isMoveLeft()) {
+            movementDirection = movementDirection.subtract(right);
+        }
+        if (inputHandler.isMoveRight()) {
+            movementDirection = movementDirection.add(right);
         }
 
-        // Movimentação Horizontal
-        Vector3 newHorizontalPosition = position.add(horizontalMovement);
-        CollisionResult horizontalCollision = collisionHandler.checkCollision(newHorizontalPosition, collisionObjects);
-
-        if (horizontalCollision.collision) {
-            // Ajusta movimentação paralela à superfície colidida
-            Vector3 adjustedMovement = horizontalMovement.subtract(horizontalCollision.collisionNormal.multiply(horizontalMovement.dot(horizontalCollision.collisionNormal)));
-            position = position.add(adjustedMovement);
-            System.out.println("Jogador colidiu horizontalmente. Nova posição: " + position);
-        } else {
-            position = newHorizontalPosition;
-            System.out.println("Jogador moveu horizontalmente. Nova posição: " + position);
+        // Normaliza e aplica força de movimentação
+        if (movementDirection.lengthSquared() > 0) {
+            movementDirection = movementDirection.normalize();
+            rigidBody.applyForce(movementDirection.multiply(moveForce));
         }
-    }
 
-    /**
-     * Move o jogador para frente na direção em que está olhando.
-     */
-    public void moveForward(double deltaTime, List<CollisionObject> collisionObjects) {
-        move(direction, currentSpeed * deltaTime, collisionObjects);
-    }
-
-    /**
-     * Move o jogador para trás, oposto à direção em que está olhando.
-     */
-    public void moveBackward(double deltaTime, List<CollisionObject> collisionObjects) {
-        move(direction, -currentSpeed * deltaTime, collisionObjects);
-    }
-
-    /**
-     * Move o jogador para a esquerda relativa à sua direção atual.
-     */
-    public void moveLeft(double deltaTime, List<CollisionObject> collisionObjects) {
-        move(right, -currentSpeed * deltaTime, collisionObjects);
-    }
-
-    /**
-     * Move o jogador para a direita relativa à sua direção atual.
-     */
-    public void moveRight(double deltaTime, List<CollisionObject> collisionObjects) {
-        move(right, currentSpeed * deltaTime, collisionObjects);
-    }
-
-    private void move(Vector3 direction, double distance, List<CollisionObject> collisionObjects) {
-        Vector3 movement = direction.multiply(distance);
-        Vector3 newPosition = position.add(movement);
-
-        CollisionResult collisionResult = collisionHandler.checkCollision(newPosition, collisionObjects);
-        if (!collisionResult.collision) {
-            position = newPosition;
-        } else {
-            position = collisionHandler.adjustMovementWithSliding(position, movement, collisionResult.collisionNormal, collisionObjects);
+        // Salto
+        if (inputHandler.consumeJump() && grounded) {
+            rigidBody.applyForce(new Vector3(0, jumpForce, 0));
         }
+
+        // Ajusta a força de movimentação para corrida
+        if (inputHandler.isRunning()) {
+            rigidBody.applyForce(direction.multiply(moveForce * 0.5)); // Ajuste conforme necessário
+        }
+
+        // Atualiza as direções do jogador com base na orientação atual
+        updateDirectionVectors();
     }
 
     /**
@@ -155,21 +99,13 @@ public class Player {
     public void rotate(double deltaX, double deltaY) {
         yaw += deltaX * sensitivity;
         pitch -= deltaY * sensitivity;
-        clampPitch();
-        updateVectors();
-    }
-
-    private void clampPitch() {
         pitch = Math.max(-89.0, Math.min(89.0, pitch));
+
+        updateDirectionVectors();
     }
 
-    private void updateVectors() {
-        direction = calculateDirection().normalize();
-        right = calculateRight().normalize();
-        up = right.cross(direction).normalize();
-    }
-
-    private Vector3 calculateDirection() {
+    private void updateDirectionVectors() {
+        // Calcula o vetor de direção
         double radYaw = Math.toRadians(yaw);
         double radPitch = Math.toRadians(pitch);
 
@@ -177,11 +113,26 @@ public class Player {
         double y = Math.sin(radPitch);
         double z = Math.sin(radYaw) * Math.cos(radPitch);
 
-        return new Vector3(x, y, z);
+        direction = new Vector3(x, y, z).normalize();
+        // Calcula os vetores right e up
+        right = direction.cross(new Vector3(0, 1, 0)).normalize();
+        up = right.cross(direction).normalize();
     }
 
-    private Vector3 calculateRight() {
-        return new Vector3(0, 1, 0).cross(direction);
+    public Vector3 getPosition() {
+        return rigidBody.getPosition();
+    }
+
+    public Vector3 getDirection() {
+        return direction;
+    }
+
+    public Vector3 getRight() {
+        return right;
+    }
+
+    public Vector3 getUp() {
+        return up;
     }
 
     public double getFov() {
@@ -192,27 +143,18 @@ public class Player {
         this.fov = fov;
     }
 
-    public void setRunning(boolean running) {
-        currentSpeed = running ? runSpeed : walkSpeed;
+    public RigidBody getRigidBody() {
+        return rigidBody;
     }
 
-    public Vector3 getPosition() {
-        return position;
+    public boolean isGrounded() {
+        return grounded;
     }
 
-    public Vector3 getDirection() {
-        return direction;
-    }
-
-    public Vector3 getUp() {
-        return up;
-    }
-
-    public Vector3 getRight() {
-        return right;
-    }
-
-    public Physics getPhysics() {
-        return physics;
+    @Override
+    public void onCollision(CollisionInfo collisionInfo, PhysicsBody otherBody) {
+        if (collisionInfo.getCollisionNormal().getY() > 0.7) { // Ajuste o limiar conforme necessário
+            grounded = true;
+        }
     }
 }

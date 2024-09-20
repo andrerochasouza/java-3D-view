@@ -1,6 +1,6 @@
 package br.com.andre.graphic;
 
-import java.awt.Color;
+import java.awt.*;
 
 public class Material {
     private String name;

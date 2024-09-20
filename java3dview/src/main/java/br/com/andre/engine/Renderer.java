@@ -11,9 +11,6 @@ import java.util.List;
 import static br.com.andre.util.CalcPolygon.calculatePolygonCenter;
 import static br.com.andre.util.CalcPolygon.calculatePolygonNormal;
 
-/**
- * A classe Renderer lida com a renderização do mundo 3D na tela 2D.
- */
 public class Renderer {
     private final World world;
     private final Player player;
