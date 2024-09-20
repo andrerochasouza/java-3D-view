@@ -21,11 +21,13 @@ public class Camera {
     private double sensitivity;
     private double radius;
 
+    Physics physics;
+
     /**
      * Inicializa a câmera na origem, olhando para o eixo -Z.
      */
     public Camera() {
-        position = new Vector3(0, 1.8, 5); // Ajuste a posição inicial se necessário
+        position = new Vector3(9, -9.0, 5); // Ajuste a posição inicial se necessário
         direction = new Vector3(0, 0, -1);
         up = new Vector3(0, 1, 0);
         right = new Vector3(1, 0, 0);
@@ -34,55 +36,73 @@ public class Camera {
         speed = 0.1;
         sensitivity = 0.1;
         radius = 0.5; // Define o raio da esfera da câmera
+        physics = new Physics();
+    }
+
+    /**
+     * Atualiza a câmera, aplicando física e movimentação.
+     *
+     * @param deltaTime         O tempo decorrido desde a última atualização (em segundos).
+     * @param collisionObjects  A lista de objetos para verificação de colisão.
+     */
+    public void update(double deltaTime, List<CollisionObject> collisionObjects) {
+        // Atualiza a física
+        physics.update(deltaTime);
+
+        // Calcula a nova posição com base na física
+        Vector3 movement = physics.getVelocity().multiply(deltaTime);
+        Vector3 newPosition = position.add(movement);
+
+        // Verifica colisões
+        CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
+        if (!collisionResult.collision) {
+            position = newPosition;
+            physics.setGrounded(false);
+        } else {
+            // Se colidir com o chão, define como grounded
+            if (collisionResult.collisionNormal.getY() > 0) {
+                physics.setGrounded(true);
+                position = position.setY(collisionResult.collisionPoint.getY() + radius);
+            } else {
+                // Ajusta movimento com deslizamento
+                adjustMovementWithSliding(movement, collisionResult.collisionNormal, collisionObjects);
+            }
+        }
     }
 
     /**
      * Move a câmera para frente na direção em que está olhando.
      */
-    public void moveForward(List<CollisionObject> collisionObjects) {
-        Vector3 movement = direction.multiply(speed);
-        Vector3 newPosition = position.add(movement);
-        CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
-        if (!collisionResult.collision) {
-            position = newPosition;
-        } else {
-            adjustMovementWithSliding(movement, collisionResult.collisionNormal, collisionObjects);
-        }
+    public void moveForward(double deltaTime, List<CollisionObject> collisionObjects) {
+        Vector3 movement = direction.multiply(speed * deltaTime);
+        move(movement, collisionObjects);
     }
 
     /**
      * Move a câmera para trás, oposto à direção em que está olhando.
      */
-    public void moveBackward(List<CollisionObject> collisionObjects) {
-        Vector3 movement = direction.multiply(speed);
-        Vector3 newPosition = position.subtract(movement);
-        CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
-        if (!collisionResult.collision) {
-            position = newPosition;
-        } else {
-            adjustMovementWithSliding(movement, collisionResult.collisionNormal, collisionObjects);
-        }
+    public void moveBackward(double deltaTime, List<CollisionObject> collisionObjects) {
+        Vector3 movement = direction.multiply(-speed * deltaTime);
+        move(movement, collisionObjects);
     }
 
     /**
      * Move a câmera para a esquerda relativa à sua direção atual.
      */
-    public void moveLeft(List<CollisionObject> collisionObjects) {
-        Vector3 movement = right.multiply(speed);
-        Vector3 newPosition = position.subtract(movement);
-        CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
-        if (!collisionResult.collision) {
-            position = newPosition;
-        } else {
-            adjustMovementWithSliding(movement, collisionResult.collisionNormal, collisionObjects);
-        }
+    public void moveLeft(double deltaTime, List<CollisionObject> collisionObjects) {
+        Vector3 movement = right.multiply(-speed * deltaTime);
+        move(movement, collisionObjects);
     }
 
     /**
      * Move a câmera para a direita relativa à sua direção atual.
      */
-    public void moveRight(List<CollisionObject> collisionObjects) {
-        Vector3 movement = right.multiply(speed);
+    public void moveRight(double deltaTime, List<CollisionObject> collisionObjects) {
+        Vector3 movement = right.multiply(speed * deltaTime);
+        move(movement, collisionObjects);
+    }
+
+    private void move(Vector3 movement, List<CollisionObject> collisionObjects) {
         Vector3 newPosition = position.add(movement);
         CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
         if (!collisionResult.collision) {
@@ -163,6 +183,7 @@ public class Camera {
         up = right.cross(direction).normalize();
     }
 
+    // Atualize o metodo checkCollision para retornar o ponto de colisão
     private CollisionResult checkCollision(Vector3 newPosition, List<CollisionObject> collisionObjects) {
         for (CollisionObject obj : collisionObjects) {
             CollisionObject.AABB boundingBox = obj.getBoundingBox();
@@ -171,7 +192,7 @@ public class Camera {
                 return result;
             }
         }
-        return new CollisionResult(false, null);
+        return new CollisionResult(false, null, null);
     }
 
     private void adjustMovementWithSliding(Vector3 movement, Vector3 collisionNormal, List<CollisionObject> collisionObjects) {
@@ -180,11 +201,10 @@ public class Camera {
 
         // Tenta mover na direção ajustada
         Vector3 newPosition = position.add(movementParallel);
+
         CollisionResult collisionResult = checkCollision(newPosition, collisionObjects);
         if (!collisionResult.collision) {
             position = newPosition;
-        } else {
-            // Se ainda colidir, não move
         }
     }
 }

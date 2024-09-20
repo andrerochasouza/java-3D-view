@@ -11,47 +11,29 @@ public class CollisionDetector {
      * @param radius        Raio da esfera.
      * @param boxMin        Mínimos do AABB.
      * @param boxMax        Máximos do AABB.
-     * @return true se houver colisão, false caso contrário.
+     * @return Resultado da colisão.
      */
     public static CollisionResult sphereIntersectsAABB(Vector3 sphereCenter, double radius, Vector3 boxMin, Vector3 boxMax) {
-        double distanceSquared = 0;
-        Vector3 closestPoint = new Vector3(0, 0, 0);
+        Vector3 closestPoint = new Vector3(
+                clamp(sphereCenter.getX(), boxMin.getX(), boxMax.getX()),
+                clamp(sphereCenter.getY(), boxMin.getY(), boxMax.getY()),
+                clamp(sphereCenter.getZ(), boxMin.getZ(), boxMax.getZ())
+        );
 
-        // Eixo X
-        double sphereX = sphereCenter.getX();
-        double minX = boxMin.getX();
-        double maxX = boxMax.getX();
-        double closestX = Math.max(minX, Math.min(sphereX, maxX));
-        double distanceX = sphereX - closestX;
-        distanceSquared += distanceX * distanceX;
-        closestPoint = closestPoint.setX(closestX);
-
-        // Eixo Y
-        double sphereY = sphereCenter.getY();
-        double minY = boxMin.getY();
-        double maxY = boxMax.getY();
-        double closestY = Math.max(minY, Math.min(sphereY, maxY));
-        double distanceY = sphereY - closestY;
-        distanceSquared += distanceY * distanceY;
-        closestPoint = closestPoint.setY(closestY);
-
-        // Eixo Z
-        double sphereZ = sphereCenter.getZ();
-        double minZ = boxMin.getZ();
-        double maxZ = boxMax.getZ();
-        double closestZ = Math.max(minZ, Math.min(sphereZ, maxZ));
-        double distanceZ = sphereZ - closestZ;
-        distanceSquared += distanceZ * distanceZ;
-        closestPoint = closestPoint.setZ(closestZ);
+        Vector3 difference = sphereCenter.subtract(closestPoint);
+        double distanceSquared = difference.lengthSquared();
 
         boolean collision = distanceSquared < radius * radius;
 
         Vector3 collisionNormal = null;
         if (collision) {
-            // Calcula a normal da colisão
-            collisionNormal = sphereCenter.subtract(closestPoint).normalize();
+            collisionNormal = difference.normalize();
         }
 
-        return new CollisionResult(collision, collisionNormal);
+        return new CollisionResult(collision, collisionNormal, closestPoint);
+    }
+
+    private static double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

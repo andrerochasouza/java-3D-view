@@ -17,10 +17,11 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
     private Camera camera;
     private World world;
     private long lastTime;
+    private double deltaTime;
     private int frameCount;
     private double fps;
 
-    private boolean moveForward, moveBackward, moveLeft, moveRight;
+    private boolean moveForward, moveBackward, moveLeft, moveRight, jump;
     private int centerX, centerY;
     private Robot robot;
 
@@ -40,7 +41,7 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
         Timer timer = new Timer(16, e -> update());
         timer.start();
 
-        lastTime = System.currentTimeMillis();
+        lastTime = System.nanoTime(); // Usa nanosegundos para maior precisão
         frameCount = 0;
 
         this.addMouseMotionListener(this);
@@ -75,22 +76,33 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
      * Atualiza o estado do jogo, incluindo movimentação da câmera e cálculo de FPS.
      */
     private void update() {
-        // Obtém a lista de paredes do mundo
-        List<CollisionObject> collisionObjects = world.getCollisionObjects(); // Obtém a lista de objetos de colisão
+        // Calcula deltaTime
+        long currentTime = System.nanoTime();
+        deltaTime = (currentTime - lastTime) / 1_000_000_000.0; // Converte para segundos
+        lastTime = currentTime;
 
-        if (moveForward) camera.moveForward(collisionObjects);
-        if (moveBackward) camera.moveBackward(collisionObjects);
-        if (moveLeft) camera.moveLeft(collisionObjects);
-        if (moveRight) camera.moveRight(collisionObjects);
+        // Obtém a lista de objetos de colisão do mundo
+        List<CollisionObject> collisionObjects = world.getCollisionObjects();
 
-        long currentTime = System.currentTimeMillis();
-        frameCount++;
+        // Atualiza a câmera
+        camera.update(deltaTime, collisionObjects);
 
-        if (currentTime - lastTime >= 1000) {
-            fps = frameCount / ((currentTime - lastTime) / 1000.0);
-            frameCount = 0;
-            lastTime = currentTime;
+        // Movimentação
+        if (moveForward) camera.moveForward(deltaTime, collisionObjects);
+        if (moveBackward) camera.moveBackward(deltaTime, collisionObjects);
+        if (moveLeft) camera.moveLeft(deltaTime, collisionObjects);
+        if (moveRight) camera.moveRight(deltaTime, collisionObjects);
+        if (jump) {
+            if (camera.physics.isGrounded()) {
+                camera.physics.applyVerticalForce(5.0); // Força do salto
+                camera.physics.setGrounded(false);
+            }
+            jump = false;
         }
+
+        // Cálculo de FPS
+        frameCount++;
+        fps = 1.0 / deltaTime;
 
         repaint();
     }
@@ -133,6 +145,9 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
             case KeyEvent.VK_D:
                 moveRight = true;
                 break;
+            case KeyEvent.VK_SPACE:
+                jump = true;
+                break;
             case KeyEvent.VK_ESCAPE:
                 System.exit(0);
                 break;
@@ -159,6 +174,7 @@ public class Game extends JPanel implements KeyListener, MouseMotionListener {
             case KeyEvent.VK_D:
                 moveRight = false;
                 break;
+            // Remova o caso do espaço para permitir saltos contínuos ao segurar a tecla
         }
     }
 
