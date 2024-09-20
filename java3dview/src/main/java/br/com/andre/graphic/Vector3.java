@@ -11,6 +11,10 @@ public class Vector3 {
         this.z = z;
     }
 
+    public Vector3() {
+        this(0, 0, 0);
+    }
+
     public double getX() {
         return x;
     }
@@ -58,25 +62,22 @@ public class Vector3 {
         return this.x * other.x + this.y * other.y + this.z * other.z;
     }
 
+    public double length() {
+        return Math.sqrt(x * x + y * y + z * z);
+    }
+
+    public double lengthSquared() {
+        return x * x + y * y + z * z;
+    }
+
     public Vector3 normalize() {
-        double length = Math.sqrt(x * x + y * y + z * z);
-        if (length == 0) {
-            return new Vector3(0, 0, 0);
-        }
-        return new Vector3(x / length, y / length, z / length);
+        double len = length();
+        if (len == 0) return new Vector3(0, 0, 0);
+        return new Vector3(x / len, y / len, z / len);
     }
 
     public boolean equals(Vector3 other) {
         return this.x == other.x && this.y == other.y && this.z == other.z;
-    }
-
-    /**
-     * Retorna um novo vetor que é a negação deste vetor.
-     *
-     * @return um novo vetor com todos os componentes multiplicados por -1
-     */
-    public Vector3 negate() {
-        return new Vector3(-this.x, -this.y, -this.z);
     }
 
     @Override
